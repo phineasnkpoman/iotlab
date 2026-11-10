@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/* ---------- Design tokens IoT LAB ESATIC ---------- */
+:root {
+  --ink: #0d1114;        /* fond principal */
+  --panel: #141a1f;      /* surfaces */
+  --panel-2: #1b232a;    /* surfaces surélevées */
+  --line: #27323b;       /* bordures */
+  --text: #e8ecee;
+  --muted: #8d9ba6;
+  --signal: #e5383b;     /* rouge d'accent (ESATIC) */
+  --signal-dim: #3a1517;
+  --copper: #d9a441;     /* secondaire : cuivre / soudure */
+  --ok: #3fb27f;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-panel2: var(--panel-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-signal: var(--signal);
+  --color-signal-dim: var(--signal-dim);
+  --color-copper: var(--copper);
+  --color-ok: var(--ok);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html { color-scheme: dark; }
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus clavier visible (accessibilité) */
+:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+
+/* Grille de circuit imprimé discrète en arrière-plan du hero */
+.pcb-grid {
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+  mask-image: linear-gradient(to bottom, #000 30%, transparent 95%);
+}
+
+/* Une seule animation : le courant circule dans le schéma du hero */
+@keyframes flow { to { stroke-dashoffset: -24; } }
+.wire-live { stroke-dasharray: 6 6; animation: flow 1.2s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .wire-live { animation: none; } }
+
+/* Contenu de leçon (rendu Markdown simple) */
+.prose-lab h2 { font-size: 1.35rem; font-weight: 600; margin: 2rem 0 .75rem; }
+.prose-lab h3 { font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 .5rem; }
+.prose-lab p { line-height: 1.75; color: #cdd5da; margin: .75rem 0; max-width: 68ch; }
+.prose-lab ul { list-style: disc; padding-left: 1.4rem; margin: .75rem 0; color: #cdd5da; }
+.prose-lab ol { list-style: decimal; padding-left: 1.4rem; margin: .75rem 0; color: #cdd5da; }
+.prose-lab li { margin: .3rem 0; line-height: 1.65; }
+.prose-lab code { font-family: var(--font-geist-mono); font-size: .875em; background: var(--panel-2); padding: .1rem .35rem; border-radius: 4px; }
+.prose-lab pre { background: #0a0d10; border: 1px solid var(--line); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+.prose-lab pre code { background: none; padding: 0; }
+.prose-lab strong { color: var(--text); }
+.prose-lab blockquote { border-left: 3px solid var(--copper); padding-left: 1rem; color: var(--muted); margin: 1rem 0; }
