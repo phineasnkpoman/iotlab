@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -10,7 +11,20 @@ import { safeNext } from "@/utils/format";
 export interface FormState { error?: string; message?: string }
 
 const NOT_CONFIGURED = "Supabase n'est pas configuré : renseignez .env.local (voir README).";
-const siteUrl = () => process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+/**
+ * Adresse publique du site, lue depuis la requête (l'adresse que le visiteur utilise réellement).
+ * Les liens des emails pointent ainsi toujours vers le bon site, sans dépendre d'une variable.
+ * Supabase n'accepte de toute façon que les adresses listées dans "Redirect URLs".
+ */
+async function siteUrl(): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (host) {
+    const local = host.startsWith("localhost") || host.startsWith("127.0.0.1");
+    return `${local ? "http" : "https"}://${host}`;
+  }
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+}
 
 const passwordSchema = z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.");
 
@@ -29,7 +43,7 @@ export async function signUp(_: FormState, formData: FormData): Promise<FormStat
     password: parsed.data.password,
     options: {
       data: { full_name: parsed.data.full_name },
-      emailRedirectTo: `${siteUrl()}/auth/callback?next=/dashboard`,
+      emailRedirectTo: `${await siteUrl()}/auth/callback?next=/dashboard`,
     },
   });
   if (error) return { error: "Inscription impossible : " + error.message };
@@ -75,7 +89,7 @@ export async function forgotPassword(_: FormState, formData: FormData): Promise<
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(parsed.data, {
-    redirectTo: `${siteUrl()}/auth/callback?next=/reinitialiser-mot-de-passe`,
+    redirectTo: `${await siteUrl()}/auth/callback?next=/reinitialiser-mot-de-passe`,
   });
   // Même réponse que l'adresse existe ou non (évite de révéler les comptes).
   return { message: "Si cette adresse correspond à un compte, un lien de réinitialisation vient d'être envoyé." };
