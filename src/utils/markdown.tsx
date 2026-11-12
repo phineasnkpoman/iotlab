@@ -66,10 +66,10 @@ export function Markdown({ source }: { source: string }) {
       const rows: string[][] = [];
       while (i < lines.length && lines[i].includes("|")) rows.push(cells(lines[i++]));
       out.push(
-        <div key={k++} className="my-4 overflow-x-auto">
+        <div key={k++} className="my-5 overflow-x-auto rounded-[18px] border border-tint/[0.08] bg-well">
           <table className="w-full border-collapse text-sm">
-            <thead><tr>{head.map((h, j) => <th key={j} className="border-b border-line px-3 py-2 text-left font-semibold">{inline(h)}</th>)}</tr></thead>
-            <tbody>{rows.map((r, a) => <tr key={a}>{r.map((c, b) => <td key={b} className="border-b border-line/60 px-3 py-2 text-[#cdd5da]">{inline(c)}</td>)}</tr>)}</tbody>
+            <thead><tr>{head.map((h, j) => <th key={j} className="border-b border-tint/[0.08] bg-tint/[0.04] px-4 py-2.5 text-left font-semibold">{inline(h)}</th>)}</tr></thead>
+            <tbody>{rows.map((r, a) => <tr key={a} className="[&:last-child>td]:border-0">{r.map((c, b) => <td key={b} className="border-b border-tint/[0.06] px-4 py-2.5 text-[var(--prose)]">{inline(c)}</td>)}</tr>)}</tbody>
           </table>
         </div>,
       );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireProfile } from "@/services/auth";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { CourseStatusTable, SubmissionsList, type SubmissionRow } from "@/components/dashboard/StaffTables";
 
@@ -16,13 +17,15 @@ export default async function TrainerPage() {
   ]);
   const mine = profile.role === "admin" ? courses ?? [] : courses ?? [];
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-      <h1 className="text-3xl font-semibold tracking-tight">Espace formateur</h1>
-      <h2 className="mt-10 text-xl font-semibold">Mes formations</h2>
+    <>
+      <PageHeader title="Espace formateur" />
+      <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6">
+      <h2 className="mt-12 text-xl font-semibold tracking-[-0.015em]">Mes formations</h2>
       <div className="mt-4"><CourseStatusTable courses={mine} /></div>
       <p className="mt-3 text-sm text-muted">La création et l&apos;édition des leçons se font pour l&apos;instant via le tableau de bord Supabase (Table Editor), voir README.</p>
-      <h2 className="mt-10 text-xl font-semibold">Soumissions des étudiants</h2>
+      <h2 className="mt-12 text-xl font-semibold tracking-[-0.015em]">Soumissions des étudiants</h2>
       <div className="mt-4"><SubmissionsList rows={(subs ?? []) as unknown as SubmissionRow[]} /></div>
-    </div>
+      </div>
+    </>
   );
 }

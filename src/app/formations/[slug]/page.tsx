@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, Circle, Clock, User, ListChecks } from "lucide-react";
+import { CheckCircle2, ChevronRight, Circle, Clock, User, ListChecks, BookOpen } from "lucide-react";
 import { getCourse, listLessons } from "@/services/catalog";
 import { getUser } from "@/services/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +9,7 @@ import { LevelBadge, ProgressBar } from "@/components/ui/Badge";
 import { EnrollButton } from "@/components/courses/LessonActions";
 import { LinkButton } from "@/components/ui/Button";
 import { formatDuration } from "@/utils/format";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const course = await getCourse((await params).slug);
@@ -43,28 +44,34 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <div className="grid gap-10 lg:grid-cols-[1fr_340px]">
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <LevelBadge level={course.level} />
-            {course.categories?.name && <span className="text-sm text-muted">{course.categories.name}</span>}
-          </div>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight">{course.title}</h1>
-          <p className="mt-3 max-w-2xl text-muted">{course.description}</p>
+    <>
+      <PageHeader back={{ href: "/formations", label: "Toutes les formations" }} title={course.title} description={course.description}>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-muted">
+          <LevelBadge level={course.level} />
+          {course.categories?.name && <span>{course.categories.name}</span>}
+          <span className="tabular inline-flex items-center gap-1.5"><Clock size={15} aria-hidden="true" />{formatDuration(course.duration_minutes)}</span>
+          <span className="tabular inline-flex items-center gap-1.5"><BookOpen size={15} aria-hidden="true" />{lessons.length} leçon{lessons.length > 1 ? "s" : ""}</span>
+        </div>
+      </PageHeader>
 
-          <h2 className="mt-10 text-xl font-semibold">Programme</h2>
-          <div className="mt-4 space-y-6">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_340px]">
+        <div>
+          <h2 className="text-xl font-semibold tracking-[-0.015em]">Programme</h2>
+          <div className="mt-5 space-y-7">
             {[...modules.entries()].sort(([a], [b]) => a - b).map(([pos, m]) => (
               <section key={pos}>
-                <h3 className="text-sm font-medium text-copper">Module {pos} : {m.title}</h3>
-                <ul className="mt-2 divide-y divide-line rounded-lg border border-line bg-panel">
+                <h3 className="flex items-baseline gap-2 text-sm font-medium">
+                  <span className="tabular font-mono text-xs text-copper">Module {pos}</span>
+                  <span>{m.title}</span>
+                </h3>
+                <ul className="mt-3 glass divide-y divide-tint/[0.07] overflow-hidden rounded-[24px]">
                   {m.items.map((l) => (
                     <li key={l.id}>
-                      <Link href={`/formations/${course.slug}/lecons/${l.slug}`} className="flex items-center gap-3 px-4 py-3 hover:bg-panel2">
-                        {doneIds.has(l.id) ? <CheckCircle2 size={18} className="shrink-0 text-ok" /> : <Circle size={18} className="shrink-0 text-muted" />}
+                      <Link href={`/formations/${course.slug}/lecons/${l.slug}`} className="group flex items-center gap-3 px-4 py-3.5 transition-colors duration-200 hover:bg-tint/[0.05]">
+                        {doneIds.has(l.id) ? <CheckCircle2 size={18} className="shrink-0 text-ok" aria-label="Terminée" /> : <Circle size={18} className="shrink-0 text-line-strong" aria-hidden="true" />}
                         <span className="flex-1 text-sm">{l.title}</span>
-                        <span className="text-xs text-muted">{l.duration_minutes} min</span>
+                        <span className="tabular text-xs text-muted">{l.duration_minutes} min</span>
+                        <ChevronRight size={16} className="text-muted transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
                       </Link>
                     </li>
                   ))}
@@ -75,30 +82,29 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
           {lessons.length === 0 && <p className="mt-4 text-sm text-muted">Les leçons de cette formation seront bientôt disponibles.</p>}
         </div>
 
-        <aside className="h-fit space-y-5 rounded-lg border border-line bg-panel p-5 lg:sticky lg:top-24">
-          <div className="space-y-2 text-sm text-muted">
-            <p className="flex items-center gap-2"><Clock size={16} />{formatDuration(course.duration_minutes)} · {lessons.length} leçons</p>
-            <p className="flex items-center gap-2"><User size={16} />{course.instructor?.full_name || "Équipe IoT LAB"}</p>
-          </div>
-          {user && enrolled && (<div className="space-y-2"><ProgressBar percent={percent} label="Progression dans la formation" /><p className="text-xs text-muted">{doneIds.size} / {lessons.length} leçons terminées ({percent} %)</p></div>)}
-          {user ? (
-            <div className="space-y-3">
-              {nextLesson && <LinkButton href={`/formations/${course.slug}/lecons/${nextLesson.slug}`} className="w-full">{doneIds.size > 0 ? "Reprendre" : "Commencer"}</LinkButton>}
-              <EnrollButton courseId={course.id} courseSlug={course.slug} enrolled={enrolled} />
+        <aside className="bezel h-fit lg:sticky lg:top-24">
+          <div className="bezel-core glass space-y-6 p-5">
+            <p className="flex items-center gap-2 text-sm text-muted"><User size={16} aria-hidden="true" />{course.instructor?.full_name || "Équipe IoT LAB"}</p>
+            {user && enrolled && (<div className="space-y-2"><ProgressBar percent={percent} label="Progression dans la formation" /><p className="tabular text-xs text-muted">{doneIds.size} / {lessons.length} leçons terminées ({percent} %)</p></div>)}
+            {user ? (
+              <div className="space-y-3">
+                {nextLesson && <LinkButton href={`/formations/${course.slug}/lecons/${nextLesson.slug}`} className="w-full py-3">{doneIds.size > 0 ? "Reprendre" : "Commencer"}</LinkButton>}
+                <EnrollButton courseId={course.id} courseSlug={course.slug} enrolled={enrolled} />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <LinkButton href={`/inscription`} className="w-full py-3">Créer un compte pour suivre</LinkButton>
+                <LinkButton href={`/connexion?redirection=/formations/${course.slug}`} variant="secondary" className="w-full">Se connecter</LinkButton>
+              </div>
+            )}
+            <div className="border-t border-tint/[0.08] pt-5">
+              <p className="flex items-center gap-2 text-sm font-medium"><ListChecks size={16} className="text-copper" aria-hidden="true" />Compétences visées</p>
+              <ul className="mt-3 space-y-2 text-sm text-muted">{course.skills.map((s) => <li key={s} className="flex gap-2.5"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-copper" aria-hidden="true" />{s}</li>)}</ul>
             </div>
-          ) : (
-            <div className="space-y-2">
-              <LinkButton href={`/inscription`} className="w-full">Créer un compte pour suivre</LinkButton>
-              <LinkButton href={`/connexion?redirection=/formations/${course.slug}`} variant="secondary" className="w-full">Se connecter</LinkButton>
-            </div>
-          )}
-          <div>
-            <p className="flex items-center gap-2 text-sm font-medium"><ListChecks size={16} />Compétences visées</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">{course.skills.map((s) => <li key={s}>{s}</li>)}</ul>
+            {course.prerequisites && <div className="border-t border-tint/[0.08] pt-5"><p className="text-sm font-medium">Prérequis</p><p className="mt-1.5 text-sm text-muted">{course.prerequisites}</p></div>}
           </div>
-          {course.prerequisites && <div><p className="text-sm font-medium">Prérequis</p><p className="mt-1 text-sm text-muted">{course.prerequisites}</p></div>}
         </aside>
       </div>
-    </div>
+    </>
   );
 }

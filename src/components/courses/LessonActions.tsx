@@ -13,10 +13,10 @@ import { FormMessage } from "@/components/ui/FormMessage";
 export function EnrollButton({ courseId, courseSlug, enrolled }: { courseId: string; courseSlug: string; enrolled: boolean }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<FormState>({});
-  if (enrolled) return <p className="text-sm text-[#9fe0c2]">Vous suivez cette formation.</p>;
+  if (enrolled) return <p className="inline-flex items-center gap-2 text-sm text-ok-soft"><Check size={16} aria-hidden="true" /> Vous suivez cette formation.</p>;
   return (
     <div className="space-y-2">
-      <Button disabled={pending} onClick={() => start(async () => setMsg(await enrollInCourse(courseId, courseSlug)))}>
+      <Button variant="secondary" className="w-full" disabled={pending} onClick={() => start(async () => setMsg(await enrollInCourse(courseId, courseSlug)))}>
         {pending ? "Inscription…" : "Suivre cette formation"}
       </Button>
       <FormMessage error={msg.error} />
@@ -56,10 +56,10 @@ export function QuizForm({ exerciseId, courseSlug, questions }: { exerciseId: st
     <form action={action} className="space-y-6">
       {questions.map((q, n) => (
         <fieldset key={q.id} className="space-y-2">
-          <legend className="font-medium">{n + 1}. {q.question}</legend>
+          <legend className="mb-1 font-medium">{n + 1}. {q.question}</legend>
           {q.options.map((o, i) => (
-            <label key={i} className="flex cursor-pointer items-start gap-2.5 rounded-md border border-line px-3 py-2 text-sm hover:bg-panel2">
-              <input type="radio" name={q.id} value={i} required className="mt-0.5 accent-[#e5383b]" />
+            <label key={i} className="flex cursor-pointer items-start gap-3 rounded-2xl border border-tint/10 bg-well px-4 py-3 text-sm transition-colors duration-200 hover:border-line-strong hover:bg-tint/[0.05] has-[:checked]:border-primary/60 has-[:checked]:bg-primary/10">
+              <input type="radio" name={q.id} value={i} required className="mt-0.5 accent-primary" />
               <span>{o}</span>
             </label>
           ))}
@@ -67,7 +67,7 @@ export function QuizForm({ exerciseId, courseSlug, questions }: { exerciseId: st
       ))}
       <FormMessage error={state.error} />
       {state.score !== undefined && (
-        <p role="status" className="rounded-md border border-copper/50 bg-panel2 px-3 py-2 text-sm">
+        <p role="status" className="tabular rounded-lg border border-copper/45 bg-copper/[0.08] px-3.5 py-2.5 text-sm">
           Résultat : {state.correct} bonne{(state.correct ?? 0) > 1 ? "s" : ""} réponse{(state.correct ?? 0) > 1 ? "s" : ""} sur {state.total} ({state.score} %).
         </p>
       )}
