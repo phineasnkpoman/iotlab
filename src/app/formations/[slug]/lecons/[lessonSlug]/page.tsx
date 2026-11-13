@@ -5,6 +5,8 @@ import { ArrowLeft, ArrowRight, ExternalLink, FlaskConical, CheckCircle2, Target
 import { getCourse, listLessons, listExercises } from "@/services/catalog";
 import { getUser } from "@/services/auth";
 import { createClient } from "@/lib/supabase/server";
+import { listMySubmissions } from "@/services/submissions";
+import { MySubmissions } from "@/components/courses/MySubmissions";
 import { Markdown } from "@/utils/markdown";
 import { safeUrl } from "@/utils/format";
 import { CompleteButton, ExerciseSubmitForm, QuizForm } from "@/components/courses/LessonActions";
@@ -39,6 +41,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
     doneIds = new Set((data ?? []).map((d) => d.lesson_id));
   }
   const done = doneIds.has(lesson.id);
+  const mine = user ? await listMySubmissions(user.id, { exerciseIds: lessonExercises.map((e) => e.id) }) : [];
   const wokwi = safeUrl(lesson.wokwi_url);
   const video = safeUrl(lesson.video_url);
 
@@ -108,6 +111,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
             <div className="mt-6 border-t border-tint/[0.08] pt-6">
               {user ? <ExerciseSubmitForm exerciseId={ex.id} courseSlug={course.slug} />
                 : <p className="text-sm text-muted"><Link href={loginHref} className="text-copper hover:underline">Connectez-vous</Link> pour soumettre votre travail.</p>}
+              <MySubmissions items={mine.filter((m) => m.exercise_id === ex.id)} />
             </div>
           </section>
         ))}

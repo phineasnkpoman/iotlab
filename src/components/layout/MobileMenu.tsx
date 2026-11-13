@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isActive } from "./NavLinks";
 
-/** `wideOnly` : masqué dans la barre entre 1024 et 1280 px (le logo mène déjà à l'accueil). */
-export interface NavItem { href: string; label: string; wideOnly?: boolean }
+/** `wideOnly` : masqué dans la barre entre 1024 et 1280 px (le logo mène déjà à l'accueil).
+ *  `mobileOnly` : seulement dans le menu mobile (sur ordinateur, l'entrée est dans le menu « Cartes »). */
+export interface NavItem { href: string; label: string; wideOnly?: boolean; mobileOnly?: boolean }
 
 export function MobileMenu({ items, children }: { items: NavItem[]; children?: React.ReactNode }) {
   const pathname = usePathname();

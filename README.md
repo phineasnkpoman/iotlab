@@ -46,6 +46,7 @@ Pas encore réalisé (à développer ensuite) :
    - `supabase/migrations/0001_schema.sql` (tables),
    - `supabase/migrations/0002_rls.sql` (sécurité, stockage, correction des quiz),
    - `supabase/migrations/0003_profile_repair.sql` (crée les profils manquants, autorise l'auto-création du profil `student`),
+   - `supabase/migrations/0004_submissions_files.sql` (dépôt de fichiers des soumissions : bucket privé de 10 Mo, règles d'accès, contrôle du propriétaire),
    - `supabase/seed.sql` (catégories, outils, challenges, formation pilote).
 4. **Authentication > URL Configuration** : *Site URL* = `http://localhost:3000` ; dans *Redirect URLs*, ajoutez `http://localhost:3000/auth/callback` (et plus tard l'adresse Vercel avec `/auth/callback`).
 5. **Authentication > Providers > Email** : laissez « Confirm email » activé.
@@ -62,6 +63,20 @@ Ensuite, l'administrateur attribue les rôles depuis `/admin`. Pour qu'un format
 
 Symptôme : `/connexion?redirection=%2Fdashboard` réapparaît alors que l'identifiant est correct.
 Cause : la session est valide, mais la ligne de l'utilisateur dans `public.profiles` est absente ou illisible. Exécutez `0003_profile_repair.sql`. Si le problème persiste, la page affiche « Profil introuvable » et le terminal de `npm run dev` détaille l'erreur Supabase (préfixe `[iotlab]`).
+
+## 3 ter. Soumissions : l'administrateur ne voyait rien
+
+Symptôme : les apprenants envoyaient leurs travaux, mais `/admin` et `/formateur` affichaient « Aucune soumission ».
+Cause : la table `submissions` a deux clés étrangères vers `profiles` (`user_id` pour l'auteur, `reviewed_by` pour le correcteur). La requête `profiles(full_name)` était donc ambiguë : Supabase répondait par l'erreur `PGRST201` et la page affichait une liste vide sans rien signaler.
+Correction : `src/services/submissions.ts` nomme la relation (`author:profiles!submissions_user_id_fkey(full_name)`) et la page affiche désormais l'erreur Supabase si la lecture échoue.
+
+Fonctionnement actuel :
+- l'apprenant joint un fichier (code, `diagram.json`, photo, PDF, .zip ; 10 Mo au plus), un lien Wokwi et/ou un texte ;
+- le fichier part du navigateur vers le bucket privé `submissions`, dans le dossier `<identifiant de l'apprenant>/` ; l'action serveur vérifie qu'il existe avant d'enregistrer la soumission ;
+- l'administrateur (ou le formateur responsable) voit les soumissions « À corriger », télécharge le fichier par un lien temporaire, met une note et un commentaire ;
+- l'apprenant retrouve la note et le commentaire sous le formulaire et dans son tableau de bord.
+
+Pour activer le dépôt de fichiers, exécutez une fois `0004_submissions_files.sql` dans le SQL Editor (le script peut être relancé sans risque).
 
 ## 4. Base de données
 

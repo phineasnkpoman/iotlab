@@ -18,7 +18,7 @@ export function Footer() {
         </div>
         <nav aria-label="Plateforme" className="space-y-2.5 text-sm">
           <p className="mb-3 font-medium">Plateforme</p>
-          {[["/formations", "Formations"], ["/cartes", "Catalogue des cartes"], ["/laboratoire", "Laboratoire"], ["/outils", "Outils"], ["/challenges", "Challenges"]].map(([h, l]) => (
+          {[["/formations", "Formations"], ["/cartes", "Catalogue des cartes"], ["/cablages", "Câblages en 3D"], ["/laboratoire", "Laboratoire"], ["/outils", "Outils"], ["/challenges", "Challenges"]].map(([h, l]) => (
             <Link key={h} href={h} className={link}>{l}</Link>
           ))}
         </nav>

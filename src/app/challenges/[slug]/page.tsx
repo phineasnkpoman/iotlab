@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { ExternalLink, Target } from "lucide-react";
 import { getChallenge } from "@/services/catalog";
 import { getUser } from "@/services/auth";
-import { createClient } from "@/lib/supabase/server";
+import { listMySubmissions } from "@/services/submissions";
+import { MySubmissions } from "@/components/courses/MySubmissions";
 import { Markdown } from "@/utils/markdown";
 import { LevelBadge } from "@/components/ui/Badge";
 import { ChallengeSubmitForm } from "@/components/forms/ChallengeSubmitForm";
@@ -25,12 +26,7 @@ export default async function ChallengePage({ params }: { params: Promise<{ slug
   const notStarted = win.notStarted;
   const ended = c.status === "closed" || win.ended;
 
-  let mine: { id: string; status: string; score: number | null; feedback: string | null; created_at: string }[] = [];
-  if (user) {
-    const supabase = await createClient();
-    const { data } = await supabase.from("submissions").select("id, status, score, feedback, created_at").eq("user_id", user.id).eq("challenge_id", c.id).order("created_at", { ascending: false });
-    mine = data ?? [];
-  }
+  const mine = user ? await listMySubmissions(user.id, { challengeId: c.id }) : [];
 
   const loginHref = `/connexion?redirection=/challenges/${c.slug}`;
   return (
@@ -67,20 +63,7 @@ export default async function ChallengePage({ params }: { params: Promise<{ slug
           </div>
         </section>
 
-        {mine.length > 0 && (
-          <section className="mt-10">
-            <h2 className="font-semibold">Mes soumissions</h2>
-            <ul className="mt-4 space-y-3">{mine.map((s) => (
-              <li key={s.id} className="glass rounded-[24px] p-4 text-sm">
-                <p className="tabular flex flex-wrap items-center gap-x-3 gap-y-1 text-muted">
-                  <span>{formatDate(s.created_at)}</span>
-                  <span className={s.status === "reviewed" ? "text-ok-soft" : "text-copper"}>{s.status === "reviewed" ? "Corrigée" : "En attente de correction"}</span>
-                  {s.score !== null && <span className="text-text">Note : {s.score}</span>}
-                </p>
-                {s.feedback && <p className="mt-2 leading-relaxed">{s.feedback}</p>}
-              </li>))}</ul>
-          </section>
-        )}
+        <MySubmissions items={mine} title="Mes participations" />
       </div>
     </>
   );

@@ -2,12 +2,12 @@
 
 import { useActionState, useTransition, useState } from "react";
 import { Check, Undo2 } from "lucide-react";
+import { SubmissionForm } from "@/components/forms/SubmissionForm";
 import { enrollInCourse, setLessonDone, submitExercise, submitQuiz, type QuizState } from "@/app/actions/learning";
 import type { FormState } from "@/app/actions/auth";
 import type { QuizQuestion } from "@/types/db";
 import { Button } from "@/components/ui/Button";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Field, TextArea } from "@/components/ui/Field";
 import { FormMessage } from "@/components/ui/FormMessage";
 
 export function EnrollButton({ courseId, courseSlug, enrolled }: { courseId: string; courseSlug: string; enrolled: boolean }) {
@@ -39,14 +39,9 @@ export function CompleteButton({ lessonId, courseId, courseSlug, done }: { lesso
 }
 
 export function ExerciseSubmitForm({ exerciseId, courseSlug }: { exerciseId: string; courseSlug: string }) {
-  const [state, action] = useActionState(submitExercise.bind(null, exerciseId, courseSlug), {} as FormState);
   return (
-    <form action={action} className="space-y-3">
-      <Field id={`link-${exerciseId}`} name="link_url" type="url" label="Lien de votre simulation (Wokwi, dépôt…)" placeholder="https://wokwi.com/projects/…" />
-      <TextArea id={`txt-${exerciseId}`} name="content" rows={4} label="Explications ou code" maxLength={5000} />
-      <FormMessage error={state.error} message={state.message} />
-      <SubmitButton>Soumettre mon travail</SubmitButton>
-    </form>
+    <SubmissionForm action={submitExercise.bind(null, exerciseId, courseSlug)} idPrefix={`ex-${exerciseId}`}
+                    linkLabel="Lien de votre simulation (Wokwi, dépôt…)" submitLabel="Soumettre mon travail" />
   );
 }
 

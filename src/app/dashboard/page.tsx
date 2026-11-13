@@ -76,7 +76,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   <div>
                     <p>Soumission : <span className="font-medium">{s.exercises?.title ?? s.challenges?.title}</span>
                       <span className="text-muted"> · {formatDate(s.created_at)} · {s.status === "reviewed" ? (s.score !== null ? `note ${s.score}` : "corrigée") : "en attente"}</span></p>
-                    {s.feedback && <p className="mt-1 text-muted">{s.feedback}</p>}
+                    {s.feedback && <p className="mt-1.5 rounded-xl border border-primary/20 bg-primary/[0.06] px-3 py-2 leading-relaxed"><span className="font-medium text-primary-soft">Commentaire du formateur : </span>{s.feedback}</p>}
                   </div>
                 </li>
               ))}

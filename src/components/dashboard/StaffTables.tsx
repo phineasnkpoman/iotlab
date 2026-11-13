@@ -1,31 +1,5 @@
 import { setCourseStatus, setChallengeStatus, setToolPublished, setUserRole } from "@/app/actions/staff";
 import { Button } from "@/components/ui/Button";
-import { ReviewForm } from "./ReviewForm";
-import { formatDate } from "@/utils/format";
-
-export interface SubmissionRow {
-  id: string; content: string | null; link_url: string | null; status: string; score: number | null;
-  feedback: string | null; created_at: string;
-  profiles: { full_name: string | null } | null;
-  exercises: { title: string } | null; challenges: { title: string } | null;
-}
-
-export function SubmissionsList({ rows }: { rows: SubmissionRow[] }) {
-  if (rows.length === 0) return <p className="text-sm text-muted">Aucune soumission à afficher.</p>;
-  return (
-    <ul className="space-y-4">
-      {rows.map((s) => (
-        <li key={s.id} className="glass rounded-[24px] p-5">
-          <p className="font-medium">{s.exercises?.title ?? s.challenges?.title}</p>
-          <p className="text-sm text-muted">{s.profiles?.full_name || "Étudiant"} · {formatDate(s.created_at)} · <span className={s.status === "reviewed" ? "text-ok-soft" : "text-copper"}>{s.status === "reviewed" ? "corrigée" : "à corriger"}</span></p>
-          {s.link_url && <p className="mt-2 break-all text-sm"><a href={s.link_url} target="_blank" rel="noopener noreferrer" className="text-copper">{s.link_url}</a></p>}
-          {s.content && <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-2xl border border-tint/[0.08] bg-[#070b14] text-[#e6edf7] p-3 font-mono text-xs">{s.content}</pre>}
-          <ReviewForm id={s.id} score={s.score} feedback={s.feedback} />
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 const STATUS_FR: Record<string, string> = { draft: "Brouillon", published: "Publié", archived: "Archivé", closed: "Clôturé", hidden: "Masqué" };
 

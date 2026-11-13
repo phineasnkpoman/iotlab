@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, ChevronDown, LayoutGrid } from "lucide-react";
+import { ArrowRight, Cable, ChevronDown, LayoutGrid } from "lucide-react";
 import { BOARDS } from "@/data/boards";
 import { BoardIcon } from "@/components/boards/BoardIcon";
 
@@ -94,6 +94,12 @@ export function CardsMenu({ active }: { active: boolean }) {
               })}
             </ul>
             <div className="mx-3 my-1 h-px bg-tint/[0.08]" aria-hidden="true" />
+            <Link href="/cablages" data-menu-link onClick={hide} aria-current={pathname.startsWith("/cablages") ? "page" : undefined}
+                  className="group flex items-center gap-3 rounded-[18px] px-3.5 py-3 text-[13.5px] text-muted outline-none transition-colors hover:bg-tint/[0.05] hover:text-text focus-visible:bg-tint/[0.07] focus-visible:text-text">
+              <Cable size={16} strokeWidth={1.7} aria-hidden="true" />
+              <span className="flex-1"><span className="text-text">Câblages en 3D</span> · capteurs et modules pas à pas</span>
+              <ArrowRight size={15} aria-hidden="true" className="transition-transform duration-300 ease-[var(--ease-spring)] group-hover:translate-x-0.5" />
+            </Link>
             <Link href="/cartes" data-menu-link onClick={hide} aria-current={pathname === "/cartes" ? "page" : undefined}
                   className="group flex items-center gap-3 rounded-[18px] px-3.5 py-3 text-[13.5px] text-muted outline-none transition-colors hover:bg-tint/[0.05] hover:text-text focus-visible:bg-tint/[0.07] focus-visible:text-text">
               <LayoutGrid size={16} strokeWidth={1.7} aria-hidden="true" />

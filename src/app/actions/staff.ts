@@ -72,5 +72,6 @@ export async function reviewSubmission(submissionId: string, _: FormState, formD
   if (error || !data?.length) return { error: "Correction refusée : cette soumission ne relève pas de vos formations." };
   revalidatePath("/formateur");
   revalidatePath("/admin");
-  return { message: "Correction enregistrée." };
+  revalidatePath("/dashboard");
+  return { message: "Correction envoyée : l'apprenant la voit dans son tableau de bord." };
 }
