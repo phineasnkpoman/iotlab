@@ -58,7 +58,7 @@ export function SubmissionsReview({ rows, pending, error, filter, basePath }: {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{name}</p>
                   <p className="mt-0.5 text-sm text-muted">
-                    {where.kind} : {where.href ? <Link href={where.href} className="text-text hover:text-primary-soft">{where.title}</Link> : where.title}
+                    {!where.title.toLowerCase().startsWith(where.kind.toLowerCase()) && <>{where.kind} : </>}{where.href ? <Link href={where.href} className="text-text hover:text-primary-soft">{where.title}</Link> : where.title}
                     {where.sub && <> · {where.sub}</>}
                   </p>
                 </div>

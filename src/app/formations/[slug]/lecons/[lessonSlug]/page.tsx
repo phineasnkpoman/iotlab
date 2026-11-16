@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, ExternalLink, FlaskConical, CheckCircle2, Target } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Box, ExternalLink, FlaskConical, CheckCircle2, ListChecks, Target } from "lucide-react";
+import { montagesForLesson } from "@/data/montages";
+import { getBoard } from "@/data/boards";
 import { getCourse, listLessons, listExercises } from "@/services/catalog";
 import { getUser } from "@/services/auth";
 import { createClient } from "@/lib/supabase/server";
 import { listMySubmissions } from "@/services/submissions";
+import { getBestQuizScores } from "@/services/learning";
 import { MySubmissions } from "@/components/courses/MySubmissions";
 import { Markdown } from "@/utils/markdown";
 import { safeUrl } from "@/utils/format";
-import { CompleteButton, ExerciseSubmitForm, QuizForm } from "@/components/courses/LessonActions";
+import { CompleteButton, ExerciseSubmitForm } from "@/components/courses/LessonActions";
+import { LessonQuiz } from "@/components/courses/LessonQuiz";
 import { LinkButton, buttonClass } from "@/components/ui/Button";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; lessonSlug: string }> }): Promise<Metadata> {
@@ -31,8 +35,10 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
   const lesson = lessons[idx];
   const prev = lessons[idx - 1];
   const next = lessons[idx + 1];
-  const lessonExercises = exercises.filter((e) => e.lesson_id === lesson.id);
-  const quiz = idx === lessons.length - 1 ? exercises.find((e) => e.kind === "quiz") : undefined;
+  const isLast = idx === lessons.length - 1;
+  const lessonExercises = exercises.filter((e) => e.lesson_id === lesson.id && e.kind !== "quiz");
+  // QCM de la leçon ; un QCM rattaché au cours seulement (lesson_id vide) s'affiche à la dernière leçon.
+  const quizzes = exercises.filter((e) => e.kind === "quiz" && e.quiz?.length && (e.lesson_id === lesson.id || (e.lesson_id === null && isLast)));
 
   let doneIds = new Set<string>();
   if (user) {
@@ -41,11 +47,16 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
     doneIds = new Set((data ?? []).map((d) => d.lesson_id));
   }
   const done = doneIds.has(lesson.id);
-  const mine = user ? await listMySubmissions(user.id, { exerciseIds: lessonExercises.map((e) => e.id) }) : [];
+  const [mine, bestScores] = user
+    ? await Promise.all([listMySubmissions(user.id, { exerciseIds: lessonExercises.map((e) => e.id) }), getBestQuizScores(user.id, quizzes.map((q) => q.id))])
+    : [[], {} as Record<string, number>];
+  const passMark = (q: (typeof quizzes)[number]) => q.pass_score ?? 70;
+  const blocking = quizzes.find((q) => q.required && q.lesson_id === lesson.id && (bestScores[q.id] ?? -1) < passMark(q));
   const wokwi = safeUrl(lesson.wokwi_url);
   const video = safeUrl(lesson.video_url);
 
   const loginHref = `/connexion?redirection=/formations/${course.slug}/lecons/${lesson.slug}`;
+  const practice = montagesForLesson(`/formations/${course.slug}/lecons/${lesson.slug}`);
   const doneCount = lessons.filter((l) => doneIds.has(l.id)).length;
 
   return (
@@ -97,6 +108,25 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
           </div>
         )}
 
+        {practice.length > 0 && (
+          <section aria-labelledby="pratiquer" className="mt-10">
+            <h2 id="pratiquer" className="flex items-center gap-2 text-sm font-medium text-muted"><Box size={16} className="text-primary-soft" aria-hidden="true" />Pratiquer au Laboratoire</h2>
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+              {practice.map((m) => (
+                <li key={m.slug}>
+                  <Link href={`/laboratoire/montages/${m.slug}`} className="glass group flex h-full items-center gap-4 rounded-[22px] p-4 outline-none transition-[border-color] duration-300 hover:border-tint/20 focus-visible:ring-2 focus-visible:ring-primary/60">
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium leading-snug">{m.title}</span>
+                      <span className="mt-0.5 block text-[13px] text-muted">Montage en 3D · {getBoard(m.board)?.name} · {m.minutes} min</span>
+                    </span>
+                    <ArrowUpRight size={16} className="shrink-0 text-muted transition-[transform,color] duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-text" aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {lessonExercises.map((ex) => (
           <section key={ex.id} className="mt-10 glass rounded-[24px] p-5 sm:p-7">
             <h2 className="text-lg font-semibold tracking-[-0.01em]">{ex.title}</h2>
@@ -108,6 +138,12 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
               </dl>
             )}
             {ex.starter_code && <pre className="mt-4 overflow-x-auto rounded-[18px] border border-tint/[0.08] bg-[#070b14] text-[#e6edf7] p-4 font-mono text-sm leading-relaxed"><code>{ex.starter_code}</code></pre>}
+            {/* Bouton propre à l'exercice seulement s'il ouvre autre chose que le Wokwi de la leçon (pas de doublon). */}
+            {safeUrl(ex.wokwi_url) && safeUrl(ex.wokwi_url) !== wokwi && (
+              <a href={safeUrl(ex.wokwi_url)!} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "mt-4")}>
+                <FlaskConical size={15} aria-hidden="true" /> Ouvrir Wokwi pour cet exercice <ExternalLink size={14} aria-hidden="true" />
+              </a>
+            )}
             <div className="mt-6 border-t border-tint/[0.08] pt-6">
               {user ? <ExerciseSubmitForm exerciseId={ex.id} courseSlug={course.slug} />
                 : <p className="text-sm text-muted"><Link href={loginHref} className="text-copper hover:underline">Connectez-vous</Link> pour soumettre votre travail.</p>}
@@ -116,18 +152,23 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
           </section>
         ))}
 
-        {quiz?.quiz && (
-          <section className="mt-10 glass rounded-[24px] p-5 sm:p-7">
-            <h2 className="text-lg font-semibold tracking-[-0.01em]">{quiz.title}</h2>
-            <p className="mb-6 mt-1 text-sm text-muted">{quiz.instructions_md}</p>
-            {user ? <QuizForm exerciseId={quiz.id} courseSlug={course.slug} questions={quiz.quiz} />
-              : <p className="text-sm text-muted"><Link href={loginHref} className="text-copper hover:underline">Connectez-vous</Link> pour passer le quiz.</p>}
-          </section>
-        )}
+        {quizzes.map((q) => user
+          ? <LessonQuiz key={q.id} exerciseId={q.id} courseSlug={course.slug} title={q.title} intro={q.instructions_md}
+                        questions={q.quiz ?? []} passScore={passMark(q)} required={Boolean(q.required)} bestScore={bestScores[q.id] ?? null} />
+          : (
+            <section key={q.id} className="glass mt-10 flex flex-wrap items-center gap-4 rounded-[28px] px-5 py-5 sm:px-7">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-primary/25 bg-primary/[0.1] text-primary-soft"><ListChecks size={20} strokeWidth={1.75} aria-hidden="true" /></span>
+              <div className="min-w-48 flex-1">
+                <h2 className="text-lg font-semibold tracking-[-0.01em]">{q.title}</h2>
+                <p className="mt-1 text-sm text-muted">{q.quiz?.length} questions pour vérifier l&apos;essentiel de la leçon.</p>
+              </div>
+              <LinkButton href={loginHref} variant="secondary">Se connecter pour répondre</LinkButton>
+            </section>
+          ))}
 
-        <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-tint/[0.08] pt-6">
+        <div id="fin-de-lecon" className="mt-12 flex scroll-mt-28 flex-wrap items-center justify-between gap-4 border-t border-tint/[0.08] pt-6">
           {user
-            ? <CompleteButton lessonId={lesson.id} courseId={course.id} courseSlug={course.slug} done={done} />
+            ? <CompleteButton lessonId={lesson.id} courseId={course.id} courseSlug={course.slug} done={done} blockedBy={blocking ? { id: blocking.id, title: blocking.title } : null} />
             : <LinkButton href={loginHref} variant="secondary">Se connecter pour suivre ma progression</LinkButton>}
           <div className="flex gap-2">
             {prev && <LinkButton href={`/formations/${course.slug}/lecons/${prev.slug}`} variant="ghost"><ArrowLeft size={16} aria-hidden="true" /> Précédente</LinkButton>}

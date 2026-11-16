@@ -5,9 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isActive } from "./NavLinks";
 
-/** `wideOnly` : masqué dans la barre entre 1024 et 1280 px (le logo mène déjà à l'accueil).
- *  `mobileOnly` : seulement dans le menu mobile (sur ordinateur, l'entrée est dans le menu « Cartes »). */
-export interface NavItem { href: string; label: string; wideOnly?: boolean; mobileOnly?: boolean }
+/** Une entrée de la navigation principale ; `hint` dit en quelques mots à quoi sert l'espace. */
+export interface NavItem { href: string; label: string; hint?: string }
 
 export function MobileMenu({ items, children }: { items: NavItem[]; children?: React.ReactNode }) {
   const pathname = usePathname();
@@ -42,9 +41,12 @@ export function MobileMenu({ items, children }: { items: NavItem[]; children?: R
               return (
                 <Link key={i.href} href={i.href} onClick={close} aria-current={active ? "page" : undefined}
                       style={{ animationDelay: `${40 + n * 35}ms` }}
-                      className={`rise flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] transition-colors ${active ? "bg-tint/[0.08] text-text" : "text-muted hover:bg-tint/[0.04] hover:text-text"}`}>
-                  {i.label}
-                  {active && <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />}
+                      className={`rise flex items-center justify-between gap-3 rounded-2xl px-4 py-3 transition-colors ${active ? "bg-tint/[0.08] text-text" : "text-muted hover:bg-tint/[0.04] hover:text-text"}`}>
+                  <span className="min-w-0">
+                    <span className="block text-[15px] font-medium text-text">{i.label}</span>
+                    {i.hint && <span className="mt-0.5 block text-[13px] text-muted">{i.hint}</span>}
+                  </span>
+                  {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />}
                 </Link>
               );
             })}

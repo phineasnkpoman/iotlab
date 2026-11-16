@@ -1,13 +1,11 @@
 "use client";
 
-import { useActionState, useTransition, useState } from "react";
-import { Check, Undo2 } from "lucide-react";
+import { useTransition, useState } from "react";
+import { Check, Lock, Undo2 } from "lucide-react";
 import { SubmissionForm } from "@/components/forms/SubmissionForm";
-import { enrollInCourse, setLessonDone, submitExercise, submitQuiz, type QuizState } from "@/app/actions/learning";
+import { enrollInCourse, setLessonDone, submitExercise } from "@/app/actions/learning";
 import type { FormState } from "@/app/actions/auth";
-import type { QuizQuestion } from "@/types/db";
 import { Button } from "@/components/ui/Button";
-import { SubmitButton } from "@/components/ui/SubmitButton";
 import { FormMessage } from "@/components/ui/FormMessage";
 
 export function EnrollButton({ courseId, courseSlug, enrolled }: { courseId: string; courseSlug: string; enrolled: boolean }) {
@@ -24,14 +22,28 @@ export function EnrollButton({ courseId, courseSlug, enrolled }: { courseId: str
   );
 }
 
-export function CompleteButton({ lessonId, courseId, courseSlug, done }: { lessonId: string; courseId: string; courseSlug: string; done: boolean }) {
+/** « Marquer comme terminée » : verrouillé tant qu'un QCM obligatoire de la leçon n'est pas réussi. */
+export function CompleteButton({ lessonId, courseId, courseSlug, done, blockedBy }: {
+  lessonId: string; courseId: string; courseSlug: string; done: boolean;
+  blockedBy?: { id: string; title: string } | null;
+}) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<FormState>({});
+  if (!done && blockedBy) {
+    return (
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Button variant="secondary" disabled aria-describedby={`verrou-${lessonId}`}><Lock size={15} aria-hidden="true" /> Marquer comme terminée</Button>
+        <p id={`verrou-${lessonId}`} className="text-sm text-muted">
+          Réussissez d&apos;abord le <a href={`#qcm-${blockedBy.id}`} className="text-primary-soft underline-offset-4 hover:underline">QCM de la leçon</a>.
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="space-y-2">
       <Button variant={done ? "secondary" : "primary"} disabled={pending}
               onClick={() => start(async () => setMsg(await setLessonDone(lessonId, courseId, courseSlug, !done)))}>
-        {done ? <><Undo2 size={16} /> Rouvrir la leçon</> : <><Check size={16} /> Marquer comme terminée</>}
+        {done ? <><Undo2 size={16} aria-hidden="true" /> Rouvrir la leçon</> : <><Check size={16} aria-hidden="true" /> Marquer comme terminée</>}
       </Button>
       <FormMessage error={msg.error} />
     </div>
@@ -42,31 +54,5 @@ export function ExerciseSubmitForm({ exerciseId, courseSlug }: { exerciseId: str
   return (
     <SubmissionForm action={submitExercise.bind(null, exerciseId, courseSlug)} idPrefix={`ex-${exerciseId}`}
                     linkLabel="Lien de votre simulation (Wokwi, dépôt…)" submitLabel="Soumettre mon travail" />
-  );
-}
-
-export function QuizForm({ exerciseId, courseSlug, questions }: { exerciseId: string; courseSlug: string; questions: QuizQuestion[] }) {
-  const [state, action] = useActionState(submitQuiz.bind(null, exerciseId, courseSlug), {} as QuizState);
-  return (
-    <form action={action} className="space-y-6">
-      {questions.map((q, n) => (
-        <fieldset key={q.id} className="space-y-2">
-          <legend className="mb-1 font-medium">{n + 1}. {q.question}</legend>
-          {q.options.map((o, i) => (
-            <label key={i} className="flex cursor-pointer items-start gap-3 rounded-2xl border border-tint/10 bg-well px-4 py-3 text-sm transition-colors duration-200 hover:border-line-strong hover:bg-tint/[0.05] has-[:checked]:border-primary/60 has-[:checked]:bg-primary/10">
-              <input type="radio" name={q.id} value={i} required className="mt-0.5 accent-primary" />
-              <span>{o}</span>
-            </label>
-          ))}
-        </fieldset>
-      ))}
-      <FormMessage error={state.error} />
-      {state.score !== undefined && (
-        <p role="status" className="tabular rounded-lg border border-copper/45 bg-copper/[0.08] px-3.5 py-2.5 text-sm">
-          Résultat : {state.correct} bonne{(state.correct ?? 0) > 1 ? "s" : ""} réponse{(state.correct ?? 0) > 1 ? "s" : ""} sur {state.total} ({state.score} %).
-        </p>
-      )}
-      <SubmitButton pendingText="Correction…">Valider mes réponses</SubmitButton>
-    </form>
   );
 }

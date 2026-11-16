@@ -6,15 +6,12 @@ import { MobileMenu, type NavItem } from "./MobileMenu";
 import { NavLinks } from "./NavLinks";
 import { ThemeMenu } from "@/components/theme/ThemeMenu";
 
+// Trois espaces, dans l'ordre du parcours : apprendre, pratiquer, se tester. L'accueil est sur le logo,
+// « À propos » dans le pied de page, la progression dans « Mon espace ».
 const items: NavItem[] = [
-  { href: "/", label: "Accueil", wideOnly: true },
-  { href: "/formations", label: "Formations" },
-  { href: "/cartes", label: "Cartes" },
-  { href: "/cablages", label: "Câblages 3D", mobileOnly: true },
-  { href: "/laboratoire", label: "Laboratoire" },
-  { href: "/outils", label: "Outils" },
-  { href: "/challenges", label: "Challenges" },
-  { href: "/a-propos", label: "À propos" },
+  { href: "/formations", label: "Formations", hint: "Apprendre, leçon par leçon" },
+  { href: "/laboratoire", label: "Laboratoire", hint: "Pratiquer : montages 3D, simulateurs, cartes, outils" },
+  { href: "/challenges", label: "Challenges", hint: "Se tester sur des défis" },
 ];
 
 export async function Navbar() {

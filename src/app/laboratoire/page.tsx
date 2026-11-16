@@ -1,64 +1,100 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FlaskConical, ExternalLink, ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { ArrowUpRight, Clock, ExternalLink, FlaskConical } from "lucide-react";
+import { MONTAGES } from "@/data/montages";
+import { BOARDS, getBoard } from "@/data/boards";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { safeUrl } from "@/utils/format";
+import { LabNav } from "@/components/layout/LabNav";
+import { LevelBadge } from "@/components/ui/Badge";
+import { Tilt } from "@/components/fx/Tilt";
+import { Wiring3D } from "@/components/fx/wiring/Wiring3D";
+import { BoardIcon } from "@/components/boards/BoardIcon";
+import { buttonClass } from "@/components/ui/Button";
 
-export const metadata: Metadata = { title: "Laboratoire virtuel" };
+export const metadata: Metadata = {
+  title: "Montages en 3D · Laboratoire",
+  description: "Montages pas à pas avec les capteurs du kit Arduino, l'ESP32 et le Raspberry Pi : schéma 3D, programme et simulation Wokwi.",
+};
 
-interface Row {
-  id: string; title: string; kind: "practice" | "quiz"; components: string[]; wiring_md: string | null;
-  wokwi_url: string | null; lesson_id: string | null;
-  lessons: { slug: string; title: string } | null;
-  courses: { slug: string; title: string } | null;
-}
+const chip = (on: boolean) => `inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[13px] transition-colors duration-300 ${on
+  ? "border-primary bg-primary text-white" : "border-tint/10 bg-tint/[0.04] text-muted hover:border-tint/20 hover:text-text"}`;
 
-export default async function LabPage() {
-  let rows: Row[] = [];
-  if (isSupabaseConfigured) {
-    const supabase = await createClient();
-    const { data } = await supabase.from("exercises")
-      .select("id, title, kind, components, wiring_md, wokwi_url, lesson_id, lessons(slug, title), courses(slug, title)")
-      .eq("kind", "practice").eq("published", true).order("position");
-    rows = (data ?? []) as unknown as Row[];
-  }
+export default async function WiringPage({ searchParams }: { searchParams: Promise<{ carte?: string }> }) {
+  const carte = (await searchParams).carte;
+  const board = carte ? getBoard(carte) : null;
+  const list = board ? MONTAGES.filter((m) => m.board === board.slug) : MONTAGES;
+
   return (
     <>
-      <PageHeader title="Laboratoire virtuel"
-        description="Chaque activité suit le même parcours : comprendre les composants, consulter le câblage, ouvrir la simulation, tester le code, puis soumettre son travail depuis la leçon." />
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          {rows.map((r) => {
-            const lessonHref = r.courses && r.lessons ? `/formations/${r.courses.slug}/lecons/${r.lessons.slug}` : null;
-            const wokwi = safeUrl(r.wokwi_url);
+      <PageHeader
+        top={<LabNav />}
+        title="Montages en 3D"
+        description="Des montages pas à pas avec les capteurs et modules du kit. Tournez le schéma, suivez chaque fil, copiez le programme, puis entraînez-vous sur Wokwi avant de passer au vrai matériel."
+      >
+        <nav aria-label="Filtrer par carte" className="flex flex-wrap gap-1.5">
+          <Link href="/laboratoire" scroll={false} aria-current={!board ? "page" : undefined} className={chip(!board)}>Toutes</Link>
+          {BOARDS.map((b) => (
+            <Link key={b.slug} href={`/laboratoire?carte=${b.slug}`} scroll={false} aria-current={board?.slug === b.slug ? "page" : undefined} className={chip(board?.slug === b.slug)}>
+              {b.name}
+            </Link>
+          ))}
+        </nav>
+      </PageHeader>
+
+      <section aria-label="Montages" className="mx-auto max-w-6xl px-4 sm:px-6">
+        <ul className="grid gap-5 md:grid-cols-2">
+          {list.map((m, i) => {
+            const b = getBoard(m.board)!;
             return (
-              <article key={r.id} className="flex flex-col glass rounded-[24px] p-6 transition-colors duration-300 hover:border-tint/20">
-                <div className="flex items-start gap-4">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-tint/10 bg-tint/[0.06] text-copper shadow-[inset_0_1px_0_rgb(255_255_255/0.12)]"><FlaskConical size={19} strokeWidth={1.75} aria-hidden="true" /></span>
-                  <div className="min-w-0">
-                    <h2 className="text-lg font-semibold leading-snug tracking-[-0.01em]">{r.title}</h2>
-                    {r.courses && <p className="mt-1 text-xs text-muted">{r.courses.title}</p>}
-                  </div>
-                </div>
-                {(r.components.length > 0 || r.wiring_md) && (
-                  <dl className="mt-5 space-y-2.5 rounded-2xl border border-tint/[0.07] bg-well p-4 text-sm">
-                    {r.components.length > 0 && <div><dt className="font-medium">Matériel</dt><dd className="mt-0.5 text-muted">{r.components.join(", ")}</dd></div>}
-                    {r.wiring_md && <div><dt className="font-medium">Câblage</dt><dd className="mt-0.5 text-muted">{r.wiring_md}</dd></div>}
-                  </dl>
-                )}
-                <div className="mt-auto flex flex-wrap items-center gap-5 pt-5 text-sm">
-                  {lessonHref && <Link href={lessonHref} className="group inline-flex items-center gap-1.5 font-medium text-copper">Ouvrir l&apos;exercice <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" /></Link>}
-                  {wokwi && <a href={wokwi} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-muted transition-colors hover:text-text">Wokwi <ExternalLink size={14} aria-hidden="true" /></a>}
-                </div>
-              </article>
+              <li key={m.slug} className="rise" style={{ ["--d" as string]: `${100 + i * 60}ms` }}>
+                <Tilt max={4} className="glass group h-full overflow-hidden rounded-[28px] transition-[border-color] duration-500 hover:border-tint/20">
+                  <Link href={`/laboratoire/montages/${m.slug}`} className="relative flex h-full flex-col rounded-[28px] p-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
+                    <div className="stage overflow-hidden rounded-[22px]">
+                      <div className="transition-transform duration-700 ease-[var(--ease-spring)] group-hover:scale-[1.04]">
+                        <Wiring3D slug={m.slug} variant="card" />
+                      </div>
+                    </div>
+                    <div className="flex flex-1 flex-col px-4 pb-4 pt-5 sm:px-5">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <span className="inline-flex items-center gap-2 text-[13px] text-muted"><BoardIcon name={b.icon} swatch={b.swatch} size="sm" />{b.name}</span>
+                        <span className="ml-auto"><LevelBadge level={m.level} /></span>
+                      </div>
+                      <h2 className="mt-4 text-[1.3rem] font-medium tracking-[-0.025em]">{m.title}</h2>
+                      <p className="mt-2 text-sm leading-relaxed text-muted">{m.summary}</p>
+                      <div className="mt-auto pt-6">
+                        <div className="flex items-center justify-between gap-3 border-t border-tint/[0.07] pt-4">
+                          <span className="tabular inline-flex items-center gap-1.5 text-[13px] text-muted"><Clock size={14} aria-hidden="true" />{m.minutes} min · {m.parts.length} composants</span>
+                          <span className="grid h-9 w-9 place-items-center rounded-full border border-tint/10 bg-tint/[0.04] text-muted transition-[transform,color,background-color] duration-500 ease-[var(--ease-spring)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:bg-tint/10 group-hover:text-text" aria-hidden="true">
+                            <ArrowUpRight size={16} />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </Tilt>
+              </li>
             );
           })}
+        </ul>
+      </section>
+
+      <section aria-labelledby="simuler" className="mx-auto max-w-6xl px-4 pb-28 pt-20 sm:px-6">
+        <div className="reveal bezel">
+          <div className="bezel-core glass grid gap-6 p-6 sm:p-9 md:grid-cols-[auto_1fr_auto] md:items-center">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl border border-tint/10 bg-tint/[0.06] text-primary-soft shadow-[inset_0_1px_0_rgb(255_255_255/0.12)]">
+              <FlaskConical size={22} strokeWidth={1.6} aria-hidden="true" />
+            </span>
+            <div>
+              <h2 id="simuler" className="text-[1.6rem] font-medium tracking-[-0.03em]">Pas de matériel sous la main ?</h2>
+              <p className="mt-2 max-w-2xl text-muted">Chaque montage se refait dans Wokwi, le simulateur Arduino et ESP32 en ligne : copiez le schéma, collez le programme, lancez. Rendez ensuite votre lien Wokwi ou votre fichier dans un exercice ou un challenge.</p>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              <a href="https://wokwi.com" target="_blank" rel="noopener noreferrer" className={buttonClass("secondary")}>Wokwi <ExternalLink size={14} aria-hidden="true" /><span className="sr-only">(nouvel onglet)</span></a>
+              <Link href="/laboratoire/outils" className={buttonClass("primary")}>Les outils du labo</Link>
+            </div>
+          </div>
         </div>
-        {rows.length === 0 && <EmptyState title="Aucune activité pratique publiée" />}
-      </div>
+      </section>
     </>
   );
 }

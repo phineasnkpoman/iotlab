@@ -51,7 +51,7 @@ export async function setToolPublished(toolId: string, published: boolean): Prom
   if (!ctx || ctx.role !== "admin") return;
   await ctx.supabase.from("tools").update({ published }).eq("id", toolId);
   revalidatePath("/admin");
-  revalidatePath("/outils");
+  revalidatePath("/laboratoire/outils");
 }
 
 export async function reviewSubmission(submissionId: string, _: FormState, formData: FormData): Promise<FormState> {

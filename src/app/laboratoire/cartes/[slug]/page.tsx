@@ -5,6 +5,7 @@ import { ArrowUpRight, Check, ExternalLink, Lightbulb } from "lucide-react";
 import { BOARDS, getBoard } from "@/data/boards";
 import { montagesFor } from "@/data/montages";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { LabNav } from "@/components/layout/LabNav";
 import { LevelBadge } from "@/components/ui/Badge";
 import { ArrowChip, LinkButton, buttonClass } from "@/components/ui/Button";
 import { Board3D } from "@/components/fx/board3d/Board3D";
@@ -27,7 +28,7 @@ export default async function BoardPage({ params }: { params: Promise<{ slug: st
 
   return (
     <>
-      <PageHeader back={{ href: "/cartes", label: "Toutes les cartes" }} title={board.name} description={board.summary}>
+      <PageHeader top={<LabNav />} title={board.name} description={board.summary}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3 text-sm text-muted">
           <LevelBadge level={board.level} />
           <span>{board.kind}</span>
@@ -133,14 +134,14 @@ export default async function BoardPage({ params }: { params: Promise<{ slug: st
               <h2 id="montages" className={h2}>Montages en 3D</h2>
               <p className="reveal mt-3 max-w-2xl text-muted">Câblages pas à pas avec cette carte, à refaire sur Wokwi{board.slug === "raspberry-pi" ? " (avec un Raspberry Pi Pico)" : ""}.</p>
             </div>
-            <Link href={`/cablages?carte=${board.slug}`} className="reveal inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text">
+            <Link href={`/laboratoire?carte=${board.slug}`} className="reveal inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text">
               Tous les câblages <ArrowUpRight size={14} aria-hidden="true" />
             </Link>
           </div>
           <ul className="mt-8 grid gap-3 md:grid-cols-2">
             {montagesFor(board.slug).map((m) => (
               <li key={m.slug} className="reveal">
-                <Link href={`/cablages/${m.slug}`} className="glass group flex h-full items-center gap-4 rounded-[22px] p-5 outline-none transition-[border-color] duration-500 hover:border-tint/20 focus-visible:ring-2 focus-visible:ring-primary/60">
+                <Link href={`/laboratoire/montages/${m.slug}`} className="glass group flex h-full items-center gap-4 rounded-[22px] p-5 outline-none transition-[border-color] duration-500 hover:border-tint/20 focus-visible:ring-2 focus-visible:ring-primary/60">
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium tracking-[-0.01em]">{m.title}</span>
                     <span className="mt-1 block text-[13.5px] leading-relaxed text-muted">{m.summary}</span>
@@ -159,7 +160,7 @@ export default async function BoardPage({ params }: { params: Promise<{ slug: st
         <ul className="mt-8 grid gap-3 md:grid-cols-3">
           {others.map((b) => (
             <li key={b.slug} className="reveal">
-              <Link href={`/cartes/${b.slug}`} className="glass group flex h-full items-center gap-4 rounded-[22px] p-4 outline-none transition-[border-color] duration-500 hover:border-tint/20 focus-visible:ring-2 focus-visible:ring-primary/60">
+              <Link href={`/laboratoire/cartes/${b.slug}`} className="glass group flex h-full items-center gap-4 rounded-[22px] p-4 outline-none transition-[border-color] duration-500 hover:border-tint/20 focus-visible:ring-2 focus-visible:ring-primary/60">
                 <BoardIcon name={b.icon} swatch={b.swatch} />
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium tracking-[-0.01em]">{b.name}</span>

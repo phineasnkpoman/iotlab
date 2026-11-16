@@ -3,13 +3,14 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { BOARDS, CHOOSER, COMPARE_ROWS, getBoard } from "@/data/boards";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { LabNav } from "@/components/layout/LabNav";
 import { LevelBadge } from "@/components/ui/Badge";
 import { Tilt } from "@/components/fx/Tilt";
 import { Board3D } from "@/components/fx/board3d/Board3D";
 import { BoardIcon } from "@/components/boards/BoardIcon";
 
 export const metadata: Metadata = {
-  title: "Catalogue des cartes",
+  title: "Cartes · Laboratoire",
   description: "Arduino Uno, Arduino Mega, ESP32 et Raspberry Pi en 3D interactive, avec leurs caractéristiques et un comparatif.",
 };
 
@@ -22,7 +23,8 @@ export default function BoardsPage() {
   return (
     <>
       <PageHeader
-        title="Catalogue des cartes"
+        top={<LabNav />}
+        title="Cartes"
         description="Quatre cartes pour apprendre l'IoT, du premier montage au serveur Linux. Ouvrez-en une pour la faire tourner en 3D, toucher ses composants et lire ses caractéristiques."
       />
 
@@ -32,7 +34,7 @@ export default function BoardsPage() {
           {BOARDS.map((b, i) => (
             <li key={b.slug} className="rise" style={{ ["--d" as string]: `${120 + i * 70}ms` }}>
               <Tilt max={5} className="glass group h-full overflow-hidden rounded-[28px] transition-[border-color,box-shadow] duration-500 hover:border-tint/20">
-                <Link href={`/cartes/${b.slug}`} className="relative flex h-full flex-col rounded-[28px] p-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
+                <Link href={`/laboratoire/cartes/${b.slug}`} className="relative flex h-full flex-col rounded-[28px] p-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
                   <div className="stage overflow-hidden rounded-[22px]">
                     <div className="transition-transform duration-700 ease-[var(--ease-spring)] group-hover:scale-[1.05]">
                       <Board3D slug={b.slug} variant="card" />
@@ -79,7 +81,7 @@ export default function BoardsPage() {
                   <th scope="col" className="sticky left-0 z-10 w-[170px] bg-panel/90 px-5 py-4 backdrop-blur"><span className="sr-only">Caractéristique</span></th>
                   {BOARDS.map((b) => (
                     <th key={b.slug} scope="col" className="px-4 py-4 align-bottom font-medium">
-                      <Link href={`/cartes/${b.slug}`} className="group inline-flex items-center gap-2.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
+                      <Link href={`/laboratoire/cartes/${b.slug}`} className="group inline-flex items-center gap-2.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
                         <BoardIcon name={b.icon} swatch={b.swatch} size="sm" />
                         <span className="leading-tight transition-colors group-hover:text-primary-soft">{b.name}</span>
                       </Link>
@@ -112,7 +114,7 @@ export default function BoardsPage() {
             const b = getBoard(c.slug)!;
             return (
               <li key={c.slug} className="reveal">
-                <Link href={`/cartes/${b.slug}`} className="glass group flex h-full items-start gap-4 rounded-[24px] p-5 outline-none transition-[border-color] duration-500 hover:border-tint/20 focus-visible:ring-2 focus-visible:ring-primary/60 sm:p-6">
+                <Link href={`/laboratoire/cartes/${b.slug}`} className="glass group flex h-full items-start gap-4 rounded-[24px] p-5 outline-none transition-[border-color] duration-500 hover:border-tint/20 focus-visible:ring-2 focus-visible:ring-primary/60 sm:p-6">
                   <BoardIcon name={b.icon} swatch={b.swatch} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[1.05rem] font-medium leading-snug tracking-[-0.015em]">{c.need}</p>

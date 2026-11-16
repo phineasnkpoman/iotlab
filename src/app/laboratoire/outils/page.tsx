@@ -3,16 +3,17 @@ import { ExternalLink, ArrowUpRight } from "lucide-react";
 import { listTools } from "@/services/catalog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { LabNav } from "@/components/layout/LabNav";
 import { safeUrl } from "@/utils/format";
 
-export const metadata: Metadata = { title: "Outils" };
+export const metadata: Metadata = { title: "Outils · Laboratoire" };
 
 export default async function ToolsPage() {
   const tools = await listTools();
   const categories = [...new Set(tools.map((t) => t.category))];
   return (
     <>
-      <PageHeader title="Outils" description="Les logiciels et plateformes utilisés dans les formations. Chaque lien ouvre le site officiel de l'outil." />
+      <PageHeader top={<LabNav />} title="Outils" description="Les logiciels et plateformes utilisés dans les formations : simuler, programmer, dessiner un schéma. Chaque lien ouvre le site officiel." />
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         {tools.length === 0 && <EmptyState title="Aucun outil publié" />}
         <div className="space-y-12">

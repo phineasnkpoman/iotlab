@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireProfile } from "@/services/auth";
-import { getMyCourseProgress, getMySubmissions, getRecentCompletions } from "@/services/learning";
+import { getMyCourseProgress, getMyLearningStats, getMySubmissions, getRecentCompletions } from "@/services/learning";
 import { listCourses } from "@/services/catalog";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { ProgressBar } from "@/components/ui/Badge";
@@ -16,13 +16,20 @@ export const metadata: Metadata = { title: "Tableau de bord" };
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ erreur?: string }> }) {
   const sp = await searchParams;
   const profile = await requireProfile(undefined, "/dashboard");
-  const [progress, submissions, recent, all] = await Promise.all([
-    getMyCourseProgress(profile.id), getMySubmissions(profile.id), getRecentCompletions(profile.id), listCourses(),
+  const [progress, allSubmissions, recent, all, stats] = await Promise.all([
+    getMyCourseProgress(profile.id), getMySubmissions(profile.id), getRecentCompletions(profile.id), listCourses(), getMyLearningStats(profile.id),
   ]);
+  // Plusieurs tentatives d'un même QCM : seule la plus récente apparaît dans l'activité.
+  const seenQuiz = new Set<string>();
+  const submissions = allSubmissions.filter((s) => {
+    if (s.exercises?.kind !== "quiz" || !s.exercise_id) return true;
+    if (seenQuiz.has(s.exercise_id)) return false;
+    seenQuiz.add(s.exercise_id);
+    return true;
+  });
   const totalLessons = progress.reduce((n, p) => n + p.total, 0);
   const doneLessons = progress.reduce((n, p) => n + p.done, 0);
   const percent = totalLessons ? Math.round((doneLessons / totalLessons) * 100) : 0;
-  const exerciseSubs = submissions.filter((s) => s.exercise_id);
   const challengeSubs = submissions.filter((s) => s.challenge_id);
   const followed = new Set(progress.map((p) => p.course.id));
   const recommended = all.filter((c) => !followed.has(c.id)).slice(0, 3);
@@ -34,14 +41,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         {sp.erreur === "acces" && <div className="mb-6"><FormMessage error="Vous n'avez pas accès à cet espace." /></div>}
 
-        <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr_1fr]">
-          <div className="glass relative overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,rgb(var(--primary-rgb)/0.16),rgb(255_255_255/0.02))] p-6">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+          <div className="glass relative col-span-2 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,rgb(var(--primary-rgb)/0.16),rgb(255_255_255/0.02))] p-6 sm:col-span-3 lg:col-span-1">
             <p className="text-sm text-muted">Progression générale</p>
             <p className="tabular mt-2 text-4xl font-semibold tracking-[-0.03em]">{percent}<span className="ml-1 text-xl text-muted">%</span></p>
             <div className="mt-4"><ProgressBar percent={percent} label="Progression générale" /></div>
             <p className="tabular mt-2 text-xs text-muted">{doneLessons} leçon{doneLessons > 1 ? "s" : ""} terminée{doneLessons > 1 ? "s" : ""} sur {totalLessons}</p>
           </div>
-          <div className={stat}><p className="text-sm text-muted">Exercices réalisés</p><p className="tabular mt-2 text-4xl font-semibold tracking-[-0.03em]">{exerciseSubs.length}</p></div>
+          <div className={stat}><p className="text-sm text-muted">Exercices rendus</p><p className="tabular mt-2 text-4xl font-semibold tracking-[-0.03em]">{stats.exercises}</p></div>
+          <div className={stat}><p className="text-sm text-muted">QCM réussis</p><p className="tabular mt-2 text-4xl font-semibold tracking-[-0.03em]">{stats.quizzesPassed}</p></div>
           <div className={stat}><p className="text-sm text-muted">Challenges</p><p className="tabular mt-2 text-4xl font-semibold tracking-[-0.03em]">{new Set(challengeSubs.map((s) => s.challenge_id)).size}</p></div>
         </div>
 
@@ -74,8 +82,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <li key={s.id} className="flex gap-3 px-4 py-3.5">
                   <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${s.status === "reviewed" ? "bg-copper" : "bg-line-strong"}`} aria-hidden="true" />
                   <div>
-                    <p>Soumission : <span className="font-medium">{s.exercises?.title ?? s.challenges?.title}</span>
-                      <span className="text-muted"> · {formatDate(s.created_at)} · {s.status === "reviewed" ? (s.score !== null ? `note ${s.score}` : "corrigée") : "en attente"}</span></p>
+                    {s.exercises?.kind === "quiz"
+                      ? <p>QCM : <span className="font-medium">{s.exercises.title}</span>
+                          <span className="tabular text-muted"> · {formatDate(s.created_at)} · {s.score !== null ? `${Math.round(Number(s.score))} %` : "noté"}</span></p>
+                      : <p>Soumission : <span className="font-medium">{s.exercises?.title ?? s.challenges?.title}</span>
+                          <span className="text-muted"> · {formatDate(s.created_at)} · {s.status === "reviewed" ? (s.score !== null ? `note ${s.score}` : "corrigée") : "en attente"}</span></p>}
                     {s.feedback && <p className="mt-1.5 rounded-xl border border-primary/20 bg-primary/[0.06] px-3 py-2 leading-relaxed"><span className="font-medium text-primary-soft">Commentaire du formateur : </span>{s.feedback}</p>}
                   </div>
                 </li>

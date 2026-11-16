@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react";
+import { LessonWidget } from "@/components/widgets/LessonWidget";
 
 /**
  * Rendu Markdown volontairement minimal (titres, listes, code, tableaux, citations,
@@ -43,6 +44,8 @@ export function Markdown({ source }: { source: string }) {
       );
       continue;
     }
+    const widget = /^@@widget\s+([a-z0-9-]+)\s*$/.exec(line);
+    if (widget) { out.push(<LessonWidget key={k++} name={widget[1]} />); i++; continue; }
     if (line.startsWith("### ")) { out.push(<h3 key={k++}>{inline(line.slice(4))}</h3>); i++; continue; }
     if (line.startsWith("## ")) { out.push(<h2 key={k++}>{inline(line.slice(3))}</h2>); i++; continue; }
     if (line.startsWith("> ")) { out.push(<blockquote key={k++}>{inline(line.slice(2))}</blockquote>); i++; continue; }
@@ -78,7 +81,7 @@ export function Markdown({ source }: { source: string }) {
     if (line.trim() === "") { i++; continue; }
 
     const para: string[] = [];
-    while (i < lines.length && lines[i].trim() !== "" && !/^(#{2,3} |> |```|\s*[-*] |\d+\. )/.test(lines[i])) para.push(lines[i++]);
+    while (i < lines.length && lines[i].trim() !== "" && !/^(#{2,3} |> |```|@@widget|\s*[-*] |\d+\. )/.test(lines[i])) para.push(lines[i++]);
     out.push(<p key={k++}>{inline(para.join(" "))}</p>);
   }
   return <Fragment>{out}</Fragment>;

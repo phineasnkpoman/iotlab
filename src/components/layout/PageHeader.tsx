@@ -3,16 +3,19 @@ import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
 /** En-tête commun des pages : titre, description, retour éventuel et actions. */
-export function PageHeader({ title, description, back, children, narrow = false }: {
+export function PageHeader({ title, description, back, top, children, narrow = false }: {
   title: ReactNode;
   description?: ReactNode;
   back?: { href: string; label: string };
+  /** Au-dessus du titre : la sous-navigation d'un espace (par exemple celle du Laboratoire). */
+  top?: ReactNode;
   children?: ReactNode;
   narrow?: boolean;
 }) {
   return (
     <header className="relative">
       <div className={`relative mx-auto px-4 pb-8 pt-12 sm:px-6 md:pb-10 md:pt-16 ${narrow ? "max-w-3xl" : "max-w-6xl"}`}>
+        {top && <div className="mb-8">{top}</div>}
         {back && (
           <Link href={back.href} className="group mb-7 inline-flex items-center gap-1.5 rounded-full border border-tint/10 bg-tint/[0.04] py-1.5 pl-2.5 pr-3.5 text-sm text-muted backdrop-blur transition-colors hover:bg-tint/[0.08] hover:text-text">
             <ArrowLeft size={15} className="transition-transform duration-300 group-hover:-translate-x-0.5" aria-hidden="true" />

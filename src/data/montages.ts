@@ -661,3 +661,28 @@ while True:
 
 export const getMontage = (slug: string) => MONTAGES.find((m) => m.slug === slug) ?? null;
 export const montagesFor = (board: BoardSlug) => MONTAGES.filter((m) => m.board === board);
+
+/*
+ * Leçons qui expliquent chaque montage. Le contenu n'est écrit qu'à un endroit :
+ * la leçon explique la notion, le Laboratoire la fait pratiquer, et chacun renvoie à l'autre.
+ */
+const ARDUINO = "/formations/premiers-pas-avec-arduino/lecons";
+const CAPTEURS = "/formations/capteurs-ultrason-pir-dht11/lecons";
+export const MONTAGE_LESSONS: Partial<Record<MontageSlug, { href: string; title: string }[]>> = {
+  "led-clignotante": [{ href: `${ARDUINO}/allumer-faire-clignoter-led`, title: "Allumer et faire clignoter une LED" }],
+  "bouton-led": [{ href: `${ARDUINO}/led-bouton-erreurs`, title: "Commander une LED avec un bouton" }],
+  "ultrasons-hc-sr04": [
+    { href: `${CAPTEURS}/principe-echo-ultrasons`, title: "Le principe de l'écho" },
+    { href: `${CAPTEURS}/brancher-programmer-hcsr04`, title: "Brancher et programmer le HC-SR04" },
+  ],
+  "esp32-detecteur-pir": [
+    { href: `${CAPTEURS}/principe-pir`, title: "Le principe du capteur PIR" },
+    { href: `${CAPTEURS}/brancher-programmer-pir`, title: "Brancher et programmer le PIR" },
+  ],
+  "station-meteo-mega": [{ href: `${CAPTEURS}/dht11`, title: "Le capteur DHT11" }],
+  "esp32-dht22-wifi": [{ href: `${CAPTEURS}/dht11`, title: "Le capteur DHT11" }],
+};
+
+/** Montages du Laboratoire qui mettent en pratique une leçon donnée (chemin de la leçon). */
+export const montagesForLesson = (href: string) =>
+  MONTAGES.filter((m) => MONTAGE_LESSONS[m.slug]?.some((l) => l.href === href));

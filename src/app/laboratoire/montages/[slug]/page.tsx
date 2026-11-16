@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUpRight, Check, Clock, Lightbulb, Send } from "lucide-react";
-import { MONTAGES, getMontage } from "@/data/montages";
+import { ArrowUpRight, BookOpen, Check, Clock, Lightbulb, Send } from "lucide-react";
+import { MONTAGES, MONTAGE_LESSONS, getMontage } from "@/data/montages";
 import { getBoard } from "@/data/boards";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { LabNav } from "@/components/layout/LabNav";
 import { LevelBadge } from "@/components/ui/Badge";
 import { LinkButton } from "@/components/ui/Button";
 import { BoardIcon } from "@/components/boards/BoardIcon";
@@ -14,7 +15,7 @@ import { WokwiPanel } from "@/components/wiring/WokwiPanel";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const m = getMontage((await params).slug);
-  return m ? { title: `${m.title} · Câblage 3D`, description: m.summary } : { title: "Montage introuvable" };
+  return m ? { title: `${m.title} · Montage 3D`, description: m.summary } : { title: "Montage introuvable" };
 }
 
 const h2 = "reveal text-[1.75rem] font-medium tracking-[-0.035em] sm:text-[2.1rem]";
@@ -24,13 +25,14 @@ export default async function MontagePage({ params }: { params: Promise<{ slug: 
   const m = getMontage(slug);
   if (!m) notFound();
   const board = getBoard(m.board)!;
+  const lessons = MONTAGE_LESSONS[m.slug] ?? [];
   const others = [...MONTAGES.filter((x) => x.slug !== m.slug && x.board === m.board), ...MONTAGES.filter((x) => x.board !== m.board)].slice(0, 3);
 
   return (
     <>
-      <PageHeader back={{ href: "/cablages", label: "Tous les câblages" }} title={m.title} description={m.summary}>
+      <PageHeader top={<LabNav />} title={m.title} description={m.summary}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3 text-sm text-muted">
-          <Link href={`/cartes/${board.slug}`} className="inline-flex items-center gap-2 transition-colors hover:text-text">
+          <Link href={`/laboratoire/cartes/${board.slug}`} className="inline-flex items-center gap-2 transition-colors hover:text-text">
             <BoardIcon name={board.icon} swatch={board.swatch} size="sm" />{board.name}
           </Link>
           <LevelBadge level={m.level} />
@@ -65,6 +67,20 @@ export default async function MontagePage({ params }: { params: Promise<{ slug: 
               </li>
             ))}
           </ul>
+          {lessons.length > 0 && (
+            <div className="mt-5 border-t border-tint/[0.07] pt-4">
+              <p className="text-[13px] text-muted">Expliqué dans {lessons.length > 1 ? "les leçons" : "la leçon"} :</p>
+              <ul className="mt-2 space-y-1.5">
+                {lessons.map((l) => (
+                  <li key={l.href}>
+                    <Link href={l.href} className="inline-flex items-center gap-2 text-[14.5px] text-primary-soft underline-offset-4 hover:underline">
+                      <BookOpen size={15} aria-hidden="true" />{l.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </section>
 
@@ -124,7 +140,7 @@ export default async function MontagePage({ params }: { params: Promise<{ slug: 
             const b = getBoard(o.board)!;
             return (
               <li key={o.slug} className="reveal">
-                <Link href={`/cablages/${o.slug}`} className="glass group flex h-full items-center gap-4 rounded-[22px] p-4 outline-none transition-[border-color] duration-500 hover:border-tint/20 focus-visible:ring-2 focus-visible:ring-primary/60">
+                <Link href={`/laboratoire/montages/${o.slug}`} className="glass group flex h-full items-center gap-4 rounded-[22px] p-4 outline-none transition-[border-color] duration-500 hover:border-tint/20 focus-visible:ring-2 focus-visible:ring-primary/60">
                   <BoardIcon name={b.icon} swatch={b.swatch} />
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium leading-snug tracking-[-0.01em]">{o.title}</span>
