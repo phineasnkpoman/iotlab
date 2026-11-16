@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink, Target } from "lucide-react";
+import { ArrowRight, Box, ExternalLink, Target } from "lucide-react";
 import { getChallenge } from "@/services/catalog";
 import { getUser } from "@/services/auth";
 import { listMySubmissions } from "@/services/submissions";
@@ -49,7 +49,13 @@ export default async function ChallengePage({ params }: { params: Promise<{ slug
         <div className="prose-lab mt-8"><h2>Consignes</h2><Markdown source={c.instructions_md} /></div>
         {c.resources.length > 0 && (
           <div className="mt-8"><p className="font-medium">Ressources</p>
-            <ul className="mt-3 space-y-2">{c.resources.map((r) => safeUrl(r.url) && <li key={r.url}><a href={r.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-copper hover:underline">{r.label} <ExternalLink size={14} aria-hidden="true" /></a></li>)}</ul>
+            <ul className="mt-3 flex flex-wrap gap-2">{c.resources.map((r) => {
+              // « /laboratoire/montages/… » : page du site (montage en 3D) ; sinon lien externe http(s) uniquement.
+              const internal = /^\/[a-z0-9/-]*$/i.test(r.url);
+              const chip = "inline-flex min-h-10 items-center gap-2 rounded-full border border-tint/10 bg-tint/[0.04] px-4 py-2 text-sm transition-colors duration-200 hover:border-tint/20 hover:bg-tint/[0.08]";
+              if (internal) return <li key={r.url}><Link href={r.url} className={chip}><Box size={15} className="text-primary-soft" aria-hidden="true" />{r.label}<ArrowRight size={14} className="text-muted" aria-hidden="true" /></Link></li>;
+              return safeUrl(r.url) && <li key={r.url}><a href={r.url} target="_blank" rel="noopener noreferrer" className={chip}>{r.label}<ExternalLink size={14} className="text-muted" aria-hidden="true" /></a></li>;
+            })}</ul>
           </div>
         )}
 

@@ -7,18 +7,20 @@ Plateforme d'apprentissage de l'IoT, de l'électronique et des systèmes embarqu
 ## 1. Ce qui fonctionne (et ce qui reste à faire)
 
 Fonctionnel dès que Supabase est configuré :
-- Pages publiques : accueil, catalogue (recherche, filtres niveau/catégorie, tri), détail d'une formation, leçons, outils, laboratoire, challenges, à propos.
+- Navigation en trois espaces, dans l'ordre du parcours (voir « Organisation du site » plus bas) : **Formations** (apprendre), **Laboratoire** (pratiquer : montages 3D, simulateurs, cartes, outils), **Challenges** (se tester), plus **Mon espace** pour la progression.
 - Authentification : inscription, confirmation par email, connexion, déconnexion, mot de passe oublié et réinitialisation, protection des routes, redirection selon le rôle.
-- Formation « Premiers pas avec Arduino » : 5 modules, 10 leçons rédigées, 3 exercices pratiques liés à Wokwi, quiz de 5 questions corrigé côté base de données.
+- Formation « Premiers pas avec Arduino » : 5 modules, 10 leçons rédigées, 3 exercices pratiques liés à Wokwi, un petit QCM à la fin de chaque leçon (corrigé côté base de données).
+- Formation « Capteurs : ultrason, PIR et température » : 7 leçons avec modules interactifs (capteurs en 3D, simulateurs ultrason et PIR, exercices de câblage), libres d'accès aussi dans Laboratoire > Simulateurs (`/laboratoire/simulateurs`).
+- QCM de fin de leçon : une question à la fois, réponses mélangées à chaque tentative, indices après une erreur, corrigé expliqué une fois réussi. Un QCM obligatoire bloque « Marquer comme terminée » tant qu'il n'est pas réussi (règle imposée par la base).
 - Progression : inscription à une formation, « Marquer comme terminée », tableau de bord calculé depuis Supabase.
-- Soumissions d'exercices et de challenges (lien + texte), correction par le formateur (note + commentaire).
+- Soumissions d'exercices et de challenges (fichier, lien ou texte), correction par le formateur (note + commentaire) visible par l'apprenant.
 - Profil étudiant (nom, filière, promotion, présentation). Le rôle n'est jamais modifiable par l'étudiant.
 - Espace formateur : publier ses formations, corriger les soumissions.
 - Espace administrateur : rôles des utilisateurs, publication des formations, challenges, outils, correction.
 
 Pas encore réalisé (à développer ensuite) :
 - Création et édition des formations, leçons, exercices et challenges **depuis l'interface**. Pour l'instant, on les gère dans Supabase (Table Editor) ou en SQL. Les contenus ne sont donc pas dans le code, mais l'éditeur visuel manque.
-- Upload de photo de profil et de fichiers de soumission : les buckets et leurs politiques de sécurité existent (`avatars`, `course-assets`, `submissions`), mais aucune interface n'envoie encore de fichier.
+- Upload de photo de profil : le bucket `avatars` et ses règles existent, mais aucune interface n'envoie encore de photo (le dépôt de fichiers des soumissions, lui, fonctionne).
 - Pas de simulateur intégré : Wokwi s'ouvre dans un nouvel onglet (lien officiel), car l'intégration en iframe n'est pas garantie.
 
 ## 2. Installation locale (Windows + VS Code)
@@ -47,7 +49,13 @@ Pas encore réalisé (à développer ensuite) :
    - `supabase/migrations/0002_rls.sql` (sécurité, stockage, correction des quiz),
    - `supabase/migrations/0003_profile_repair.sql` (crée les profils manquants, autorise l'auto-création du profil `student`),
    - `supabase/migrations/0004_submissions_files.sql` (dépôt de fichiers des soumissions : bucket privé de 10 Mo, règles d'accès, contrôle du propriétaire),
-   - `supabase/seed.sql` (catégories, outils, challenges, formation pilote).
+   - `supabase/migrations/0005_quiz_gating.sql` (QCM obligatoires, seuil de réussite, explications, blocage des leçons),
+   - `supabase/seed.sql` (catégories, outils, challenges, formation pilote),
+   - `supabase/seed_qcm_premiers_pas.sql` (un QCM de 4 questions par leçon de la formation pilote),
+   - `supabase/seed_capteurs.sql` (formation « Capteurs », publiée directement).
+   - `supabase/seed_challenges_exercices.sql` (8 nouveaux challenges, 2 challenges complétés et publiés, 12 exercices pratiques de plus).
+
+   Les fichiers `seed_*.sql` peuvent être relancés : ils mettent à jour les QCM sans créer de doublon.
 4. **Authentication > URL Configuration** : *Site URL* = `http://localhost:3000` ; dans *Redirect URLs*, ajoutez `http://localhost:3000/auth/callback` (et plus tard l'adresse Vercel avec `/auth/callback`).
 5. **Authentication > Providers > Email** : laissez « Confirm email » activé.
 6. Redémarrez `npm run dev`.
@@ -78,12 +86,36 @@ Fonctionnement actuel :
 
 Pour activer le dépôt de fichiers, exécutez une fois `0004_submissions_files.sql` dans le SQL Editor (le script peut être relancé sans risque).
 
+## 3 quater. QCM de fin de leçon et modules interactifs
+
+**Mise en place** (une fois) : `npm install` (ajoute `three`, la bibliothèque 3D), puis dans le SQL Editor : `0005_quiz_gating.sql`, `seed_qcm_premiers_pas.sql` et `seed_capteurs.sql`.
+
+**Écrire un QCM** : c'est un exercice `kind = 'quiz'` rattaché à une leçon (`lesson_id`), avec `required = true` pour bloquer la leçon et `pass_score` (en %). Dans `quiz`, chaque question a `id`, `question`, `options`, et en option `code` (extrait de programme affiché sous l'énoncé) et `hint` (indice montré après une erreur). Les bonnes réponses (`answers`) et les explications (`explanations`) vont dans `exercise_answers`, que les apprenants ne peuvent pas lire : la base ne renvoie le corrigé qu'une fois le QCM réussi. Modèle : le bloc `do $do$ … $do$` de `seed_qcm_premiers_pas.sql`.
+
+**Insérer un module interactif** dans une leçon : une ligne `@@widget nom` seule dans `content_md`. Noms : `sensor-3d`, `sensor-3d-hcsr04`, `sensor-3d-pir`, `sensor-3d-dht11`, `ultrasonic-sim`, `pir-sim`, `wiring-hcsr04`, `wiring-pir`, `wiring-dht11` (voir `src/components/widgets/LessonWidget.tsx`).
+
+Les notes automatiques des QCM n'apparaissent pas dans la liste « Soumissions » des formateurs : seuls les travaux à corriger y figurent.
+
+## Organisation du site
+
+Chaque contenu n'existe qu'à un seul endroit ; les pages se renvoient l'une à l'autre au lieu de se répéter.
+
+| Espace | Adresse | Rôle |
+|---|---|---|
+| Accueil | `/` | Orienter : les trois espaces et la formation par laquelle commencer |
+| Formations | `/formations` | Apprendre : leçons, exercices, QCM de fin de leçon |
+| Laboratoire | `/laboratoire` | Pratiquer. Rubriques : Montages 3D (`/laboratoire`, `/laboratoire/montages/…`), Simulateurs, Cartes, Outils |
+| Challenges | `/challenges` | Se tester sur des défis notés et commentés |
+| Mon espace | `/dashboard` | Progression, QCM réussis, corrections reçues |
+
+Une leçon affiche les montages 3D qui la mettent en pratique, et chaque montage renvoie à la leçon qui l'explique (`src/data/montages.ts`, `MONTAGE_LESSONS`). Les anciennes adresses (`/cablages`, `/cartes`, `/outils`, `/laboratoire/capteurs`) redirigent vers les nouvelles (`next.config.ts`).
+
 ## 4. Base de données
 
 12 tables : `profiles`, `categories`, `courses`, `lessons`, `enrollments`, `lesson_progress`, `exercises`, `exercise_answers`, `submissions`, `tools`, `challenges`, `challenge_results`. Clés primaires UUID, clés étrangères avec suppression en cascade, `created_at` / `updated_at` automatiques.
 
 Choix de conception :
-- Les bonnes réponses du quiz sont dans `exercise_answers`, illisible pour les étudiants. La fonction `grade_quiz` calcule la note dans la base.
+- Les bonnes réponses des QCM sont dans `exercise_answers`, illisible pour les étudiants. La fonction `grade_quiz` calcule la note dans la base et ne renvoie le corrigé qu'après réussite. Un trigger refuse « leçon terminée » tant qu'un QCM obligatoire n'est pas réussi.
 - `submissions` sert aux exercices **et** aux challenges (une contrainte impose l'un ou l'autre).
 - Le contenu des leçons est du Markdown simplifié, rendu sans HTML brut (pas de risque XSS).
 
@@ -106,7 +138,7 @@ Choix de conception :
 
 ```
 src/app/            pages et Server Actions (actions/)
-src/components/     ui, layout, courses, forms, dashboard
+src/components/     ui, layout, courses, forms, dashboard, widgets (modules interactifs), fx et wiring (3D)
 src/lib/supabase/   clients navigateur, serveur et session (proxy)
 src/services/       accès aux données (auth, catalogue, progression)
 src/types/ utils/   types TypeScript, formatage, rendu Markdown

@@ -5,6 +5,8 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { safeUrl } from "@/utils/format";
 import type { FormState } from "./auth";
+import { getPendingRequiredQuizzes } from "@/services/learning";
+import type { QuizCorrection } from "@/types/db";
 
 async function currentUserId() {
   const supabase = await createClient();
@@ -29,6 +31,12 @@ export async function setLessonDone(lessonId: string, courseId: string, courseSl
   const { supabase, userId } = await currentUserId();
   if (!userId) return { error: "Connectez-vous pour enregistrer votre progression." };
 
+  // QCM obligatoires : vérifiés ici pour un message clair, et imposés aussi par un trigger dans la base (0005).
+  if (done) {
+    const pending = await getPendingRequiredQuizzes(userId, lessonId);
+    if (pending.length > 0) return { error: `Validez d'abord le QCM de cette leçon : ${pending.join(", ")}.` };
+  }
+
   await supabase.from("enrollments").upsert(
     { user_id: userId, course_id: courseId }, { onConflict: "user_id,course_id", ignoreDuplicates: true });
 
@@ -36,7 +44,10 @@ export async function setLessonDone(lessonId: string, courseId: string, courseSl
     ? await supabase.from("lesson_progress").upsert(
         { user_id: userId, lesson_id: lessonId }, { onConflict: "user_id,lesson_id", ignoreDuplicates: true })
     : await supabase.from("lesson_progress").delete().eq("user_id", userId).eq("lesson_id", lessonId);
-  if (error) return { error: "Progression non enregistrée. Réessayez." };
+  if (error) {
+    // P0001 : levée par le trigger lesson_progress_require_quiz (QCM obligatoire non validé).
+    return { error: error.code === "P0001" ? "Validez d'abord le QCM de cette leçon." : "Progression non enregistrée. Réessayez." };
+  }
 
   revalidatePath(`/formations/${courseSlug}`, "layout");
   revalidatePath("/dashboard");
@@ -122,19 +133,38 @@ export async function submitChallenge(challengeId: string, challengeSlug: string
   return { message: "Participation envoyée. La note et le commentaire apparaîtront juste en dessous." };
 }
 
-export interface QuizState extends FormState { score?: number; correct?: number; total?: number }
+export interface QuizResult {
+  score: number; correct: number; total: number;
+  passed: boolean; passScore: number;
+  /** Identifiants des questions ratées (null si la base n'est pas encore migrée en 0005). */
+  wrong: string[] | null;
+  /** Corrigé expliqué, renvoyé par la base seulement quand le QCM est réussi. */
+  correction: Record<string, QuizCorrection> | null;
+}
+export interface QuizState extends FormState { result?: QuizResult }
 
-/** Correction du quiz côté base de données (les bonnes réponses ne sont jamais envoyées au navigateur). */
+/** Correction du QCM côté base de données : les bonnes réponses ne quittent la base qu'après réussite. */
 export async function submitQuiz(exerciseId: string, courseSlug: string, _: QuizState, formData: FormData): Promise<QuizState> {
   const { supabase, userId } = await currentUserId();
-  if (!userId) return { error: "Connectez-vous pour valider le quiz." };
+  if (!userId) return { error: "Connectez-vous pour valider le QCM." };
   const choices: Record<string, number> = {};
   for (const [k, v] of formData.entries()) {
-    if (k.startsWith("q") && /^\d+$/.test(String(v))) choices[k] = Number(v);
+    if (/^q[\w-]{0,40}$/.test(k) && /^\d{1,2}$/.test(String(v))) choices[k] = Number(v);
   }
   const { data, error } = await supabase.rpc("grade_quiz", { p_exercise_id: exerciseId, p_choices: choices });
   if (error || !data) return { error: "Correction impossible. Réessayez." };
   revalidatePath(`/formations/${courseSlug}`, "layout");
   revalidatePath("/dashboard");
-  return { score: data.score, correct: data.correct, total: data.total, message: "Quiz corrigé." };
+  const score = Number(data.score);
+  const passScore = typeof data.pass_score === "number" ? data.pass_score : 70;
+  return {
+    message: "QCM corrigé.",
+    result: {
+      score, correct: Number(data.correct), total: Number(data.total),
+      passed: typeof data.passed === "boolean" ? data.passed : score >= passScore,
+      passScore,
+      wrong: Array.isArray(data.wrong) ? (data.wrong as string[]) : null,
+      correction: data.correction && typeof data.correction === "object" ? (data.correction as Record<string, QuizCorrection>) : null,
+    },
+  };
 }

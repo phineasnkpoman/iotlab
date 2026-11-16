@@ -259,6 +259,10 @@ p, li { text-wrap: pretty; }
 @keyframes knob-sweep { 0%, 8% { rotate: -135deg; } 50%, 58% { rotate: 135deg; } 100% { rotate: -135deg; } }
 @keyframes servo-sweep { 0%, 8% { rotate: 0deg; } 50%, 58% { rotate: 180deg; } 100% { rotate: 0deg; } }
 @keyframes ring-out { from { scale: 0.35; opacity: 0.9; } to { scale: 1.9; opacity: 0; } }
+/* QCM : changement de question (sens donné par --dx), remplissage de l'anneau de score, apparition des résultats */
+@keyframes quiz-step { from { opacity: 0; translate: var(--dx, 16px) 0; } }
+@keyframes ring-fill { from { stroke-dashoffset: var(--ring-c); } }
+@keyframes pop-in { from { opacity: 0; scale: 0.6; } }
 
 @media (prefers-reduced-motion: no-preference) {
   .wire-live { stroke-dasharray: 6 6; animation: flow 1.2s linear infinite; }
@@ -284,6 +288,9 @@ p, li { text-wrap: pretty; }
   .knob-sweep { animation: knob-sweep 5s ease-in-out infinite; }
   .servo-sweep { animation: servo-sweep 5s ease-in-out infinite; }
   .wifi-ring, .sound-ring, .us-wave { animation: ring-out 2.1s var(--ease-out) infinite backwards; }
+  .quiz-step { animation: quiz-step 0.42s var(--ease-out) both; }
+  .ring-fill { animation: ring-fill 1.1s var(--ease-out) both; animation-delay: 120ms; }
+  .pop-in { animation: pop-in 0.5s var(--ease-spring) both; animation-delay: var(--d, 0ms); }
 
   .skeleton {
     background: linear-gradient(90deg, color-mix(in srgb, var(--tint) 4%, transparent) 0%, color-mix(in srgb, var(--tint) 9%, transparent) 50%, color-mix(in srgb, var(--tint) 4%, transparent) 100%);
@@ -300,18 +307,19 @@ p, li { text-wrap: pretty; }
 /* Ondes des schémas : invisibles sans animation */
 .wifi-ring, .sound-ring, .us-wave { opacity: 0; }
 
-/* Contenu de leçon (rendu Markdown simple) */
-.prose-lab h2 { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.025em; margin: 2.4rem 0 .8rem; }
-.prose-lab h3 { font-size: 1.12rem; font-weight: 600; margin: 1.6rem 0 .5rem; }
-.prose-lab p { line-height: 1.8; color: var(--prose); margin: .85rem 0; max-width: 68ch; }
-.prose-lab ul { list-style: disc; padding-left: 1.4rem; margin: .85rem 0; color: var(--prose); }
-.prose-lab ol { list-style: decimal; padding-left: 1.4rem; margin: .85rem 0; color: var(--prose); }
-.prose-lab li { margin: .35rem 0; line-height: 1.7; }
-.prose-lab li::marker { color: var(--copper); }
-.prose-lab code { font-family: var(--font-geist-mono); font-size: .875em; background: color-mix(in srgb, var(--tint) 7%, transparent); border: 1px solid var(--glass-border); padding: .05rem .4rem; border-radius: 6px; }
+/* Contenu de leçon (rendu Markdown simple).
+   « :not(.not-prose *) » : les modules interactifs insérés dans une leçon gardent leur propre style. */
+.prose-lab h2:not(.not-prose *) { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.025em; margin: 2.4rem 0 .8rem; }
+.prose-lab h3:not(.not-prose *) { font-size: 1.12rem; font-weight: 600; margin: 1.6rem 0 .5rem; }
+.prose-lab p:not(.not-prose *) { line-height: 1.8; color: var(--prose); margin: .85rem 0; max-width: 68ch; }
+.prose-lab ul:not(.not-prose *) { list-style: disc; padding-left: 1.4rem; margin: .85rem 0; color: var(--prose); }
+.prose-lab ol:not(.not-prose *) { list-style: decimal; padding-left: 1.4rem; margin: .85rem 0; color: var(--prose); }
+.prose-lab li:not(.not-prose *) { margin: .35rem 0; line-height: 1.7; }
+.prose-lab li:not(.not-prose *)::marker { color: var(--copper); }
+.prose-lab code:not(.not-prose *) { font-family: var(--font-geist-mono); font-size: .875em; background: color-mix(in srgb, var(--tint) 7%, transparent); border: 1px solid var(--glass-border); padding: .05rem .4rem; border-radius: 6px; }
 /* Les blocs de code restent sombres dans les deux thèmes (lisibilité de la coloration). */
-.prose-lab pre { background: #070b14; color: #e6edf7; border: 1px solid rgb(165 195 255 / 0.12); border-radius: 18px; padding: 1.15rem 1.3rem; overflow-x: auto; margin: 1.3rem 0; line-height: 1.65; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05); }
-.prose-lab pre code { background: none; border: 0; padding: 0; color: inherit; }
-.prose-lab strong { color: var(--text); font-weight: 600; }
-.prose-lab em { color: var(--text); }
-.prose-lab blockquote { border-left: 2px solid var(--copper); background: color-mix(in srgb, var(--copper) 8%, transparent); border-radius: 0 14px 14px 0; padding: .8rem 1.1rem; color: var(--prose); margin: 1.3rem 0; max-width: 68ch; }
+.prose-lab pre:not(.not-prose *) { background: #070b14; color: #e6edf7; border: 1px solid rgb(165 195 255 / 0.12); border-radius: 18px; padding: 1.15rem 1.3rem; overflow-x: auto; margin: 1.3rem 0; line-height: 1.65; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05); }
+.prose-lab pre code:not(.not-prose *) { background: none; border: 0; padding: 0; color: inherit; }
+.prose-lab strong:not(.not-prose *) { color: var(--text); font-weight: 600; }
+.prose-lab em:not(.not-prose *) { color: var(--text); }
+.prose-lab blockquote:not(.not-prose *) { border-left: 2px solid var(--copper); background: color-mix(in srgb, var(--copper) 8%, transparent); border-radius: 0 14px 14px 0; padding: .8rem 1.1rem; color: var(--prose); margin: 1.3rem 0; max-width: 68ch; }

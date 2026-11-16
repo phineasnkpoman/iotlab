@@ -29,13 +29,18 @@ export interface Lesson {
   video_url: string | null; wokwi_url: string | null; duration_minutes: number;
 }
 
-export interface QuizQuestion { id: string; question: string; options: string[] }
+/** Question de QCM. `code` : extrait de programme affiché sous l'énoncé ; `hint` : indice montré après une erreur. */
+export interface QuizQuestion { id: string; question: string; options: string[]; code?: string; hint?: string }
+
+/** Corrigé d'une question, renvoyé par la base une fois le QCM réussi. */
+export interface QuizCorrection { answer: number; explanation: string | null }
 
 export interface Exercise {
   id: string; course_id: string; lesson_id: string | null; position: number; kind: "practice" | "quiz";
   title: string; instructions_md: string; components: string[]; wiring_md: string | null;
   starter_code: string | null; wokwi_url: string | null; requires_submission: boolean;
   quiz: QuizQuestion[] | null;
+  required: boolean; pass_score: number;
 }
 
 export interface Submission {

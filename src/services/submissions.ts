@@ -88,8 +88,10 @@ export async function listMySubmissions(userId: string, target: { challengeId: s
 export async function listSubmissionsForReview(filter: ReviewFilter, limit = 60) {
   const supabase = await createClient();
   let query = supabase.from("submissions").select(SELECT).order("created_at", { ascending: false }).limit(limit);
+  // Les QCM sont notés automatiquement (status « reviewed », reviewed_by vide) : ils n'ont rien à faire ici.
   if (filter === "a-corriger") query = query.eq("status", "submitted");
-  if (filter === "corrigees") query = query.eq("status", "reviewed");
+  if (filter === "corrigees") query = query.eq("status", "reviewed").not("reviewed_by", "is", null);
+  if (filter === "toutes") query = query.or("status.eq.submitted,reviewed_by.not.is.null");
 
   const [{ data, error }, { count }] = await Promise.all([
     query,
